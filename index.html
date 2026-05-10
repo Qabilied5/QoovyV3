@@ -1710,6 +1710,116 @@ window.addEventListener('load',function(){
   renderQueueList();
   setTimeout(function(){openModal(true);},500);
 });
+
+// ═══════════════════════════════════════════
+//  BACKGROUND PLAYBACK KEEPALIVE
+//  Mencegah browser mematikan audio saat PWA diminimize
+// ═══════════════════════════════════════════
+
+var _audioCtx = null;
+var _silentNode = null;
+var _gainNode = null;
+var _keepaliveInterval = null;
+
+function initAudioKeepAlive() {
+  if (_audioCtx) return;
+
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    _silentNode = _audioCtx.createOscillator();
+    _gainNode = _audioCtx.createGain();
+    
+    _gainNode.gain.setValueAtTime(0.001, _audioCtx.currentTime); // hampir 0, tidak terdengar
+    _silentNode.connect(_gainNode);
+    _gainNode.connect(_audioCtx.destination);
+    _silentNode.start();
+    
+    console.log('[Qoovy] Audio keepalive aktif —', _audioCtx.state);
+  } catch(e) {
+    console.warn('[Qoovy] Audio keepalive gagal:', e);
+  }
+}
+
+function resumeAudioCtx() {
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume().then(function() {
+      console.log('[Qoovy] AudioContext resumed');
+    });
+  }
+}
+
+function startSwKeepalive() {
+  if (_keepaliveInterval) return;
+  _keepaliveInterval = setInterval(function() {
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'KEEPALIVE',
+        ts: Date.now()
+      });
+    }
+
+    resumeAudioCtx();
+  }, 25000);
+}
+
+function stopSwKeepalive() {
+  if (_keepaliveInterval) {
+    clearInterval(_keepaliveInterval);
+    _keepaliveInterval = null;
+  }
+}
+
+
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'hidden') {
+
+    resumeAudioCtx();
+    startSwKeepalive();
+    
+    if (isPlaying) {
+      setTimeout(function() {
+        ytCmd('playVideo', []);
+      }, 500);
+    }
+    
+    console.log('[Qoovy] App diminimize — keepalive aktif');
+  } else {
+    resumeAudioCtx();
+    stopSwKeepalive();
+    console.log('[Qoovy] App kembali aktif');
+  }
+});
+
+var _origSetPlayState = setPlayState;
+setPlayState = function(state) {
+  _origSetPlayState(state);
+  if (state) {
+
+    initAudioKeepAlive();
+    resumeAudioCtx();
+    startSwKeepalive();
+  } else {
+    stopSwKeepalive();
+  }
+};
+
+document.addEventListener('click', function initOnFirstInteraction() {
+  initAudioKeepAlive();
+  document.removeEventListener('click', initOnFirstInteraction);
+}, { once: true });
+
+document.addEventListener('touchstart', function initOnFirstTouch() {
+  initAudioKeepAlive();
+  document.removeEventListener('touchstart', initOnFirstTouch);
+}, { once: true });
+
+var _origTogglePlay = togglePlay;
+togglePlay = function() {
+  initAudioKeepAlive();
+  resumeAudioCtx();
+  _origTogglePlay();
+};
 </script>
 </body>
 </html>

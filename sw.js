@@ -3,6 +3,8 @@
 //  Version: 1.0.0
 // ═══════════════════════════════════════════
 
+// sw.js
+
 const CACHE_NAME = 'qoovy-v1';
 const STATIC_ASSETS = [
   './',
@@ -96,12 +98,12 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-// ── BACKGROUND SYNC (future use)
+// ── BACKGROUND SYNC
 self.addEventListener('sync', function(event) {
   console.log('[QoovySW] Background sync:', event.tag);
 });
 
-// ── PUSH NOTIFICATIONS (future use)
+// ── PUSH NOTIFICATIONS
 self.addEventListener('push', function(event) {
   if (!event.data) return;
   var data = event.data.json();
@@ -119,4 +121,22 @@ self.addEventListener('notificationclick', function(event) {
   event.waitUntil(
     clients.openWindow(event.notification.data.url || './')
   );
+});
+
+// ── MESSAGE HANDLER
+self.addEventListener('message', function(event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+  
+  if (event.data && event.data.type === 'KEEPALIVE') {
+    if (event.source) {
+      event.source.postMessage({
+        type: 'KEEPALIVE_ACK',
+        ts: Date.now()
+      });
+    }
+    return;
+  }
 });
