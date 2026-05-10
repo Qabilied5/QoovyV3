@@ -1346,13 +1346,31 @@ function createKeepaliveWorker() {
 
         if (isPlaying) {
           simCur += elapsed;
+          
+          // Fallback: if simDur is unknown but we've been playing for a while, estimate it
+          if (simDur === 0 && _trackLoadedAt > 0) {
+            var timeSinceLoad = Date.now() - _trackLoadedAt;
+            if (timeSinceLoad > 3000) {
+              // If no duration after 3s, estimate standard video length
+              simDur = 240;
+            }
+          }
+          
           if (simDur > 0 && simCur >= simDur - 0.3) {
             simCur = simDur;
             updateProgressUI();
-            setPlayState(false);
+            // Check if playback will continue before pausing
+            var willContinue = musicQueue.length>0 || repeatMode===2 || repeatMode===1 || (curIdx >= 0 && curIdx + 1 < tracks.length);
+            if(!willContinue){ setPlayState(false); }
             handleTrackEnd();
-          } else {
+          } else if (simDur > 0) {
             updateProgressUI();
+          } else if (_trackLoadedAt > 0) {
+            // Still waiting for duration but time passed, update UI anyway
+            var timeSinceLoad = Date.now() - _trackLoadedAt;
+            if (timeSinceLoad > 5000) {
+              updateProgressUI();
+            }
           }
           // Sync posisi ke MediaSession setiap 5 tick
           if (_workerTickCount % 5 === 0) setMediaSessionPlayback(true);
@@ -1553,6 +1571,7 @@ var adCountVal = 5;
 var isAdShowing = false;
 var ytAPIReady = false;
 var _pendingPlay = false;
+var _trackLoadedAt = 0;
 var infoRequestTimer = null;
 var adWatchTimer = null;
 var CORS_PROXIES = ['https://corsproxy.io/?url=','https://api.allorigins.win/get?url='];
@@ -1852,6 +1871,7 @@ function playTrack(idx){
   var t=tracks[idx];
   simCur=0;simDur=0;ytAPIReady=false;
   _pendingPlay = true;
+  _trackLoadedAt = Date.now();
   hideAdOverlay();
 
   document.getElementById('idle-view').style.display='none';
@@ -1882,9 +1902,15 @@ function playTrack(idx){
   setTimeout(function(){
     if(curIdx===idx && _pendingPlay){
       ytCmd('playVideo',[]);
-      if(simDur===0) simDur=240;
+      if(simDur===0) { simDur=240; updateProgressUI(); }
     }
-  },2000);
+  },1500);
+  setTimeout(function(){
+    if(curIdx===idx && _pendingPlay){
+      ytCmd('playVideo',[]);
+      console.log('[Qoovy] Force play retry at 4s');
+    }
+  },4000);
 }
 
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
@@ -1919,7 +1945,12 @@ function setPlayState(state){
   var disc=document.getElementById('idle-disc');
   if(state) disc.classList.add('spin'); else disc.classList.remove('spin');
   setMediaSessionPlayback(state);
-  if(state){ requestWakeLock(); initAudioKeepAlive(); resumeAudioCtx(); }
+  if(state){
+    requestWakeLock();
+    initAudioKeepAlive();
+    resumeAudioCtx();
+    _pendingPlay = false;
+  }
   else { releaseWakeLock(); }
 }
 
