@@ -2,17 +2,61 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Qoovy - Music Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Qoovy - Music Streaming</title>
+
+<!-- ═══ PWA META TAGS ═══ -->
 <meta name="application-name" content="Qoovy">
-<meta name="description" content="Qoovy Music Streaming — Putar musik favoritmu tanpa iklan">
+<meta name="description" content="Qoovy – Music Streaming Platform by Qabil. Nikmati musik favoritmu tanpa iklan.">
+<meta name="theme-color" content="#080810" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#080810">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Qoovy">
+<meta name="msapplication-TileColor" content="#080810">
+<meta name="msapplication-TileImage" content="icons/icon-144.png">
+<meta name="msapplication-tap-highlight" content="no">
+<meta name="format-detection" content="telephone=no">
+<meta name="HandheldFriendly" content="True">
+
+<!-- ═══ OPEN GRAPH ═══ -->
+<meta property="og:title" content="Qoovy Music Streaming">
+<meta property="og:description" content="Streaming musik tanpa iklan oleh Qabil">
+<meta property="og:type" content="website">
+<meta property="og:image" content="icons/icon-512.png">
+
+<!-- ═══ APPLE TOUCH ICONS ═══ -->
+<link rel="apple-touch-icon" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-192.png">
+
+<!-- ═══ FAVICON / ICONS ═══ -->
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-72.png">
+<link rel="shortcut icon" href="icons/icon-192.png">
+
+<!-- ═══ PWA MANIFEST ═══ -->
+<link rel="manifest" href="manifest.json">
+
+<!-- ═══ APPLE SPLASH SCREENS ═══ -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- iPhone 14 Pro Max -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
+<!-- iPhone 14 Pro -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
+<!-- iPhone 14 / 13 -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
+<!-- iPhone SE -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/icon-384.png">
+<!-- iPad -->
+<link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/icon-512.png">
 
 <style>
+/* ═══════════════════════════════════════
+   PWA ADDITIONS — Safe Area / Install
+═══════════════════════════════════════ */
 :root {
   --bg: #080810;
   --orb1: rgba(99,68,255,0.22);
@@ -33,16 +77,135 @@
   --yellow: #fbbf24;
   --glow-a: rgba(167,139,250,0.35);
   --glow-b: rgba(236,100,162,0.25);
+
+  /* Safe area insets for notch/dynamic island */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
 }
-*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-html, body { height:100%; overflow:hidden; }
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html {
+  height: 100%;
+  /* Prevent iOS rubber-banding on PWA */
+  overscroll-behavior: none;
+}
 body {
   background: var(--bg);
   color: var(--text);
   font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
-  display: flex; flex-direction: column; min-height: 100vh;
+  display: flex; flex-direction: column;
+  height: 100%; min-height: 100%;
+  /* Account for notch/safe areas */
+  padding-top: var(--sat);
+  padding-left: var(--sal);
+  padding-right: var(--sar);
   position: relative;
+  overflow: hidden;
+  /* Prevent text selection accidental in PWA */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Smooth scroll */
+  -webkit-overflow-scrolling: touch;
 }
+/* Re-allow text selection in inputs */
+input, textarea { -webkit-user-select: text; user-select: text; }
+
+/* Window Controls Overlay (desktop PWA title bar) */
+@media (display-mode: window-controls-overlay) {
+  header {
+    padding-top: calc(env(titlebar-area-height, 36px) + 6px) !important;
+    app-region: drag;
+  }
+  .header-right, .logo-wrap { app-region: no-drag; }
+}
+
+/* Standalone mode tweaks */
+@media (display-mode: standalone) {
+  body { padding-bottom: var(--sab); }
+  .controls-zone {
+    padding-bottom: calc(20px + var(--sab)) !important;
+  }
+}
+
+/* ═══ PWA INSTALL BANNER ═══ */
+#pwa-install-bar {
+  display: none;
+  align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(236,100,162,0.08));
+  border-bottom: 1px solid rgba(167,139,250,0.2);
+  padding: 10px 20px;
+  gap: 12px;
+  position: relative; z-index: 20;
+  flex-shrink: 0;
+  animation: slide-down 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes slide-down { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+#pwa-install-bar.show { display: flex; }
+.pwa-install-icon {
+  width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+}
+.pwa-install-text { flex: 1; }
+.pwa-install-title { font-size: 12px; font-weight: 700; color: var(--text); letter-spacing: 0.5px; }
+.pwa-install-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.btn-pwa-install {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: 8px; color: white;
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  padding: 7px 14px; cursor: pointer; text-transform: uppercase;
+  transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.btn-pwa-install:hover { transform: scale(1.05); box-shadow: 0 0 16px var(--glow-a); }
+.btn-pwa-dismiss {
+  background: none; border: none; color: var(--muted); cursor: pointer;
+  padding: 4px 6px; border-radius: 6px; font-size: 16px; line-height: 1;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.btn-pwa-dismiss:hover { color: var(--text); background: var(--glass); }
+
+/* ═══ OFFLINE INDICATOR ═══ */
+#offline-bar {
+  display: none;
+  align-items: center; gap: 8px;
+  background: rgba(248,113,113,0.1);
+  border-bottom: 1px solid rgba(248,113,113,0.2);
+  padding: 7px 20px;
+  font-size: 11px; color: var(--red);
+  font-weight: 600; letter-spacing: 0.5px;
+  position: relative; z-index: 20;
+  flex-shrink: 0;
+}
+#offline-bar.show { display: flex; }
+.offline-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; animation: pulse-red 1.5s ease-in-out infinite; }
+@keyframes pulse-red { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ═══ UPDATE BANNER ═══ */
+#update-bar {
+  display: none;
+  align-items: center; justify-content: space-between; gap: 10px;
+  background: rgba(56,189,248,0.08);
+  border-bottom: 1px solid rgba(56,189,248,0.2);
+  padding: 8px 20px;
+  position: relative; z-index: 20;
+  flex-shrink: 0;
+}
+#update-bar.show { display: flex; }
+.update-text { font-size: 11px; color: var(--accent3); font-weight: 600; }
+.btn-update-now {
+  background: var(--accent3); border: none; border-radius: 7px; color: #000;
+  font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  padding: 5px 12px; cursor: pointer; transition: all 0.2s;
+}
+.btn-update-now:hover { transform: scale(1.05); }
+
+/* ═══════════════════════════════ */
+/*  ALL ORIGINAL STYLES BELOW     */
+/* ═══════════════════════════════ */
+
+/* BG */
 .bg-scene { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
 .orb { position:absolute; border-radius:50%; filter:blur(80px); animation:drift 12s ease-in-out infinite; }
 .orb-1 { width:600px; height:600px; background:var(--orb1); top:-200px; left:-200px; animation-duration:14s; }
@@ -60,12 +223,15 @@ body {
     linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
   background-size:48px 48px;
 }
+
+/* HEADER */
 header {
   position:relative; z-index:10;
   display:flex; align-items:center; justify-content:space-between;
   padding:14px 28px;
   background:rgba(8,8,16,0.7);
   backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
   border-bottom:1px solid var(--glass-border);
   flex-shrink: 0;
 }
@@ -78,6 +244,7 @@ header {
 }
 .logo-sub { font-size:10px; letter-spacing:2px; color:var(--muted); font-weight:500; text-transform:uppercase; }
 .header-right { display:flex; align-items:center; gap:8px; }
+
 .adb-badge {
   display:flex; align-items:center; gap:6px;
   background:rgba(74,222,128,0.08);
@@ -91,25 +258,34 @@ header {
 .adb-badge:hover { background:rgba(74,222,128,0.14); }
 .adb-badge.off { background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.2); color:var(--red); }
 .adb-dot { width:6px; height:6px; border-radius:50%; background:currentColor; box-shadow:0 0 6px currentColor; }
+
 .api-btn {
   display:flex; align-items:center; gap:7px;
   background:var(--glass); border:1px solid var(--glass-border);
   color:var(--text); padding:7px 14px; border-radius:10px;
   font-size:12px; font-family:'Courier New',monospace; cursor:pointer;
   letter-spacing:1px; transition:all 0.2s; backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
 }
 .api-btn:hover { background:var(--glass-hover); border-color:var(--accent); box-shadow:0 0 14px var(--glow-a); }
 .status-dot { width:7px; height:7px; border-radius:50%; background:var(--muted2); transition:all 0.4s; flex-shrink:0; }
 .status-dot.active { background:var(--green); box-shadow:0 0 8px var(--green); }
+
+/* LAYOUT */
 .app { position:relative; z-index:5; flex:1; display:flex; overflow:hidden; min-height:0; }
+
+/* SIDEBAR */
 .sidebar {
   width:320px; min-width:320px;
   display:flex; flex-direction:column; overflow:hidden;
   background:rgba(8,8,16,0.5);
   backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
   border-right:1px solid var(--glass-border);
   flex-shrink:0;
 }
+
+/* SEARCH SECTION */
 .search-section { padding:14px 14px 10px; border-bottom:1px solid var(--glass-border); position:relative; }
 .section-label {
   font-size:9px; letter-spacing:3px; color:var(--muted); text-transform:uppercase;
@@ -121,6 +297,7 @@ header {
   flex:1; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border);
   border-radius:10px; color:var(--text); font-size:13px; padding:9px 13px;
   outline:none; font-family:inherit; transition:all 0.25s; backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
 }
 .search-input::placeholder { color:var(--muted); }
 .search-input:focus {
@@ -136,6 +313,8 @@ header {
 .btn-go:hover { transform:scale(1.04); box-shadow:0 0 20px var(--glow-a); }
 .btn-go:active { transform:scale(0.97); }
 .btn-go:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+/* SEARCH HISTORY DROPDOWN */
 .search-history-dropdown {
   position:absolute; top:100%; left:14px; right:14px; z-index:200;
   background:rgba(14,14,24,0.98); border:1px solid var(--glass-border);
@@ -167,10 +346,9 @@ header {
   font-weight:600; border-top:1px solid var(--glass-border);
 }
 .sh-clear-row:hover { background:rgba(167,139,250,0.06); }
-.sidebar-tabs {
-  display:flex; border-bottom:1px solid var(--glass-border);
-  flex-shrink:0;
-}
+
+/* SIDEBAR TABS */
+.sidebar-tabs { display:flex; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
 .tab-btn {
   flex:1; background:none; border:none; color:var(--muted);
   font-family:inherit; font-size:11px; font-weight:600; letter-spacing:1px;
@@ -193,18 +371,25 @@ header {
 }
 .tab-badge.queue-badge { background:rgba(251,191,36,0.15); color:var(--yellow); }
 .tab-badge.hist-badge { background:rgba(56,189,248,0.15); color:var(--accent3); }
+
+/* TAB PANELS */
 .tab-panel { display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0; }
 .tab-panel.active { display:flex; }
+
+/* PLAYLIST HEAD */
 .playlist-head { padding:10px 14px 6px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
 .badge {
   font-size:10px; font-family:'Courier New',monospace;
   background:rgba(167,139,250,0.15); border:1px solid rgba(167,139,250,0.25);
   color:var(--accent); padding:2px 8px; border-radius:20px;
 }
-.track-list { flex:1; overflow-y:auto; padding:4px 8px 12px; }
+
+/* TRACK LIST */
+.track-list { flex:1; overflow-y:auto; padding:4px 8px 12px; -webkit-overflow-scrolling:touch; }
 .track-list::-webkit-scrollbar { width:3px; }
 .track-list::-webkit-scrollbar-track { background:transparent; }
 .track-list::-webkit-scrollbar-thumb { background:var(--muted2); border-radius:3px; }
+
 .track-item {
   display:flex; align-items:center; gap:8px; padding:7px 8px;
   border-radius:12px; cursor:pointer; transition:all 0.2s;
@@ -230,6 +415,7 @@ header {
 .wave-bar:nth-child(2) { animation-delay:0.15s; }
 .wave-bar:nth-child(3) { animation-delay:0.3s; }
 @keyframes wave-anim { 0%,100% { height:3px; opacity:0.5; } 50% { height:13px; opacity:1; } }
+
 .track-actions { opacity:0; transition:opacity 0.15s; display:flex; align-items:center; gap:2px; }
 .btn-queue-add {
   background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);
@@ -238,6 +424,8 @@ header {
   cursor:pointer; transition:all 0.2s; flex-shrink:0;
 }
 .btn-queue-add:hover { background:rgba(251,191,36,0.2); transform:scale(1.1); }
+
+/* QUEUE PANEL */
 .queue-head {
   padding:10px 14px 6px;
   display:flex; align-items:center; justify-content:space-between;
@@ -270,6 +458,8 @@ header {
   opacity:0; flex-shrink:0;
 }
 .btn-queue-remove:hover { color:var(--red); background:rgba(248,113,113,0.1); }
+
+/* HISTORY PANEL */
 .history-head {
   padding:10px 14px 6px;
   display:flex; align-items:center; justify-content:space-between;
@@ -289,10 +479,9 @@ header {
   cursor:pointer; transition:all 0.2s;
 }
 .hist-item:hover { background:var(--glass-hover); border-color:var(--glass-border); }
-.hist-time {
-  font-size:9px; font-family:'Courier New',monospace; color:var(--accent3);
-  white-space:nowrap; flex-shrink:0;
-}
+.hist-time { font-size:9px; font-family:'Courier New',monospace; color:var(--accent3); white-space:nowrap; flex-shrink:0; }
+
+/* SEARCH MODE INFO */
 .search-mode-info {
   padding:6px 14px;
   background:rgba(56,189,248,0.04);
@@ -301,6 +490,8 @@ header {
   display:flex; align-items:center; gap:6px; flex-shrink:0;
 }
 .mode-dot { width:5px; height:5px; border-radius:50%; background:var(--accent3); flex-shrink:0; }
+
+/* EMPTY/LOADING */
 .empty-wrap { text-align:center; padding:36px 20px; }
 .empty-icon-wrap {
   width:56px; height:56px; margin:0 auto 14px; border-radius:14px;
@@ -311,11 +502,15 @@ header {
 .empty-title { font-size:13px; font-weight:600; color:var(--muted); margin-bottom:6px; }
 .empty-sub { font-size:11px; color:var(--muted2); line-height:1.7; }
 .spinner-sm { width:28px; height:28px; border:2px solid var(--muted2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin:14px auto 0; }
+
+/* MAIN */
 .main-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
 .video-area {
   flex:1; display:flex; align-items:center; justify-content:center;
   padding:24px 24px 14px; overflow:hidden; position:relative;
 }
+
+/* IDLE */
 .idle-view { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; text-align:center; }
 .idle-disc { width:110px; height:110px; border-radius:50%; position:relative; animation:disc-spin 10s linear infinite paused; }
 .idle-disc.spin { animation-play-state:running; }
@@ -327,6 +522,8 @@ header {
 .idle-desc { font-size:13px; color:var(--muted2); max-width:280px; line-height:1.7; }
 .kbd-hint { font-size:10px; color:var(--muted2); letter-spacing:0.5px; margin-top:-6px; }
 .kbd { display:inline-block; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); border-radius:4px; padding:1px 6px; font-size:10px; font-family:'Courier New',monospace; }
+
+/* PLAYER */
 .player-view { display:none; width:100%; max-width:700px; }
 .video-glass-wrap {
   position:relative; border-radius:18px; overflow:hidden;
@@ -334,69 +531,43 @@ header {
   box-shadow:0 0 0 1px rgba(167,139,250,0.08), 0 8px 64px rgba(0,0,0,0.8), 0 0 60px rgba(99,68,255,0.12);
   aspect-ratio:16/9; background:#000;
 }
-/* iframe-shield: selalu blocking selama adblock aktif + loading */
-.iframe-shield {
-  position:absolute; inset:0; z-index:10;
-  pointer-events:none;
-  border-radius:18px;
-  background:transparent;
-}
-.iframe-shield.blocking {
-  pointer-events:all;
-  cursor:default;
-}
-#yt-iframe { width:100%; height:100%; border:none; display:block; }
-.video-shimmer { position:absolute; inset:0; pointer-events:none; border-radius:18px; box-shadow:inset 0 0 60px rgba(0,0,0,0.4); z-index:2; }
+#yt-iframe { width:100%; height:100%; border:none; display:block; pointer-events:none; }
+.video-shimmer { position:absolute; inset:0; pointer-events:none; border-radius:18px; box-shadow:inset 0 0 60px rgba(0,0,0,0.4); }
+
+/* AD BLOCKER OVERLAY */
 .ad-overlay {
-  display:none; position:absolute; inset:0; z-index:30;
-  background:rgba(8,8,16,0.97); backdrop-filter:blur(20px);
-  align-items:center; justify-content:center; flex-direction:column; gap:12px;
+  display:none; position:absolute; inset:0; z-index:20;
+  background:rgba(8,8,16,0.96); backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  align-items:center; justify-content:center; flex-direction:column; gap:14px;
   border-radius:18px; text-align:center;
-  animation:overlay-fade-in 0.2s ease;
 }
-@keyframes overlay-fade-in { from { opacity:0; } to { opacity:1; } }
 .ad-overlay.show { display:flex; }
 .ad-shield {
-  width:70px; height:70px; border-radius:50%;
-  background:rgba(74,222,128,0.12); border:2px solid rgba(74,222,128,0.4);
+  width:60px; height:60px; border-radius:50%;
+  background:rgba(74,222,128,0.1); border:2px solid rgba(74,222,128,0.3);
   display:flex; align-items:center; justify-content:center;
-  animation:pulse-shield 1.4s ease-in-out infinite;
+  animation:pulse-shield 1.5s ease-in-out infinite;
 }
-.ad-shield.warn {
-  background:rgba(251,191,36,0.12); border-color:rgba(251,191,36,0.5);
-}
-@keyframes pulse-shield { 0%,100% { box-shadow:0 0 0 0 rgba(74,222,128,0.4); } 50% { box-shadow:0 0 0 16px rgba(74,222,128,0); } }
+@keyframes pulse-shield { 0%,100% { box-shadow:0 0 0 0 rgba(74,222,128,0.3); } 50% { box-shadow:0 0 0 12px rgba(74,222,128,0); } }
 .ad-title { font-size:15px; font-weight:800; color:var(--green); letter-spacing:2px; text-transform:uppercase; }
-.ad-title.warn { color:var(--yellow); }
-.ad-sub { font-size:11px; color:var(--muted); max-width:220px; line-height:1.6; }
-.ad-phase { font-size:10px; color:var(--accent3); letter-spacing:2px; text-transform:uppercase; font-weight:700; }
+.ad-sub { font-size:12px; color:var(--muted); }
 .ad-countdown { font-size:28px; font-weight:900; color:var(--text); font-family:'Courier New',monospace; }
-.ad-progress-bar { width:160px; height:3px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
-.ad-progress-fill { height:100%; background:linear-gradient(90deg, var(--green), var(--accent3)); border-radius:3px; width:0%; transition:width 0.4s linear; }
 .btn-skip-now {
-  background:linear-gradient(135deg, var(--accent), var(--accent2));
-  border:none; border-radius:10px; color:#fff;
-  font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
-  padding:8px 20px; cursor:pointer; transition:all 0.2s;
+  background:linear-gradient(135deg, var(--green), #22c55e);
+  border:none; border-radius:10px; color:#000;
+  font-size:12px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
+  padding:10px 20px; cursor:pointer; transition:all 0.2s;
 }
 .btn-skip-now:hover { transform:scale(1.05); }
-.ad-block-status {
-  position:absolute; bottom:10px; left:12px; z-index:15;
-  background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.25);
-  border-radius:8px; padding:4px 10px;
-  font-size:10px; font-weight:700; color:var(--green);
-  letter-spacing:1px; text-transform:uppercase;
-  display:flex; align-items:center; gap:5px;
-  opacity:0; transition:opacity 0.3s;
-  pointer-events:none;
-}
-.ad-block-status.show { opacity:1; }
-.ad-block-status-dot { width:5px; height:5px; border-radius:50%; background:var(--green); animation:blink-dot 1.2s ease-in-out infinite; }
-@keyframes blink-dot { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
-.vid-loading { display:none; position:absolute; inset:0; background:rgba(8,8,16,0.7); align-items:center; justify-content:center; border-radius:18px; z-index:20; backdrop-filter:blur(4px); }
+
+/* VIDEO LOADING */
+.vid-loading { display:none; position:absolute; inset:0; background:rgba(8,8,16,0.7); align-items:center; justify-content:center; border-radius:18px; z-index:10; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
 .vid-loading.show { display:flex; }
 .spinner { width:44px; height:44px; border:3px solid rgba(167,139,250,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
+
+/* NOW PLAYING */
 .now-playing-info { margin-top:14px; text-align:center; padding:0 8px; }
 .np-label { font-size:9px; letter-spacing:4px; color:var(--accent); text-transform:uppercase; font-weight:600; margin-bottom:5px; opacity:0.8; }
 .np-title {
@@ -406,7 +577,7 @@ header {
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:640px; margin:0 auto 4px;
 }
 .np-ch { font-size:13px; color:var(--muted); font-weight:300; }
-.status-bar { display:flex; align-items:center; gap:8px; justify-content:center; margin-top:7px; flex-wrap:wrap; }
+.status-bar { display:flex; align-items:center; gap:8px; justify-content:center; margin-top:7px; }
 .status-pill {
   font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:600;
   padding:3px 10px; border-radius:20px;
@@ -416,11 +587,12 @@ header {
 .pill-adblock.off { background:rgba(248,113,113,0.08); border-color:rgba(248,113,113,0.15); color:var(--red); }
 .pill-queue { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.15); color:var(--yellow); display:none; }
 .pill-queue.show { display:inline-flex; }
-.pill-adblock-count { background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.15); color:var(--green); display:none; }
-.pill-adblock-count.show { display:inline-flex; }
+
+/* CONTROLS */
 .controls-zone {
   padding:12px 28px 20px;
   background:rgba(8,8,16,0.6); backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
   border-top:1px solid var(--glass-border); flex-shrink:0;
 }
 .progress-row { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
@@ -433,6 +605,7 @@ header {
   transition:opacity 0.2s; box-shadow:0 0 8px rgba(255,255,255,0.5);
 }
 .prog-track:hover .prog-fill::after { opacity:1; }
+
 .ctrl-row { display:flex; align-items:center; justify-content:space-between; }
 .ctrl-group { display:flex; align-items:center; gap:8px; }
 .c-btn {
@@ -446,8 +619,7 @@ header {
 .c-btn .repeat-badge {
   position:absolute; top:4px; right:4px; width:8px; height:8px;
   background:var(--accent2); border-radius:50%; font-size:6px; color:white;
-  display:none; align-items:center; justify-content:center; font-weight:900;
-  line-height:1;
+  display:none; align-items:center; justify-content:center; font-weight:900; line-height:1;
 }
 .c-btn.repeat-one .repeat-badge { display:flex; }
 .play-btn {
@@ -460,16 +632,19 @@ header {
 }
 .play-btn:hover { transform:scale(1.08); box-shadow:0 0 36px var(--glow-a), 0 4px 24px rgba(0,0,0,0.5); }
 .play-btn:active { transform:scale(0.95); }
+
 .vol-group { display:flex; align-items:center; gap:8px; }
 input[type=range].vol-slider { -webkit-appearance:none; width:80px; height:4px; border-radius:4px; background:rgba(255,255,255,0.1); outline:none; cursor:pointer; }
 input[type=range].vol-slider::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:var(--text); cursor:pointer; transition:all 0.2s; }
 input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--accent); box-shadow:0 0 8px var(--glow-a); }
-.modal-backdrop { display:none; position:fixed; inset:0; z-index:100; background:rgba(8,8,16,0.85); backdrop-filter:blur(12px); align-items:center; justify-content:center; }
+
+/* MODAL */
+.modal-backdrop { display:none; position:fixed; inset:0; z-index:100; background:rgba(8,8,16,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); align-items:center; justify-content:center; }
 .modal-backdrop.show { display:flex; }
 .modal {
   background:rgba(18,18,28,0.95); border:1px solid var(--glass-border);
   border-radius:20px; padding:36px 32px; width:100%; max-width:480px;
-  backdrop-filter:blur(20px);
+  backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
   box-shadow:0 0 80px rgba(167,139,250,0.12), 0 24px 64px rgba(0,0,0,0.6);
   animation:modal-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
 }
@@ -478,7 +653,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 .modal-title { font-size:20px; font-weight:800; letter-spacing:1px; margin-bottom:6px; }
 .modal-desc { font-size:13px; color:var(--muted); line-height:1.7; margin-bottom:22px; }
 .modal-input-wrap { position:relative; margin-bottom:14px; }
-.modal-input { width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); border-radius:12px; color:var(--text); font-size:13px; font-family:'Courier New',monospace; padding:12px 46px 12px 16px; outline:none; transition:all 0.25s; }
+.modal-input { width:100%; background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); border-radius:12px; color:var(--text); font-size:13px; font-family:'Courier New',monospace; padding:12px 46px 12px 16px; outline:none; transition:all 0.25px; -webkit-user-select:text; user-select:text; }
 .modal-input:focus { border-color:var(--accent); background:rgba(167,139,250,0.06); box-shadow:0 0 0 3px rgba(167,139,250,0.1); }
 .modal-input::placeholder { color:var(--muted); }
 .toggle-key { position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--muted); cursor:pointer; padding:4px; transition:color 0.2s; }
@@ -489,6 +664,8 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 .btn-cancel { background:var(--glass); border:1px solid var(--glass-border); border-radius:12px; color:var(--muted); font-size:14px; font-weight:600; padding:12px 20px; cursor:pointer; font-family:inherit; transition:all 0.2s; }
 .btn-cancel:hover { color:var(--text); background:var(--glass-hover); }
 .modal-note { margin-top:14px; font-size:11px; color:var(--muted2); line-height:1.6; text-align:center; }
+
+/* KEYBOARD SHORTCUT HINT */
 .kbd-shortcuts-bar {
   padding:5px 14px; background:rgba(167,139,250,0.03);
   border-bottom:1px solid var(--glass-border); flex-shrink:0;
@@ -499,77 +676,29 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 .kbd-hint-item { display:flex; align-items:center; gap:4px; white-space:nowrap; }
 .kbd-key { font-size:9px; font-family:'Courier New',monospace; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:4px; padding:1px 5px; color:var(--muted); letter-spacing:0.5px; }
 .kbd-desc { font-size:9px; color:var(--muted2); }
+
+/* TOAST */
 .toast {
   position:fixed; bottom:90px; right:20px; z-index:999;
   background:rgba(22,22,34,0.95); border:1px solid var(--glass-border);
   border-left:3px solid var(--accent); color:var(--text);
   padding:10px 16px; border-radius:12px; font-size:12.5px;
-  backdrop-filter:blur(16px);
+  backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
   transform:translateY(16px) scale(0.97); opacity:0;
   transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);
   pointer-events:none; max-width:300px;
   box-shadow:0 4px 24px rgba(0,0,0,0.4);
 }
 .toast.show { transform:translateY(0) scale(1); opacity:1; }
-.offline-bar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
-  background: rgba(248,113,113,0.12); border-bottom: 1px solid rgba(248,113,113,0.3);
-  backdrop-filter: blur(16px);
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 7px 16px;
-  transform: translateY(-100%);
-  transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
-  font-size: 12px; font-weight: 600; letter-spacing: 0.5px; color: var(--red);
-}
-.offline-bar.show { transform: translateY(0); }
-.offline-label { flex: 1; text-align: center; }
-.offline-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 8px var(--red); flex-shrink: 0; animation: blink-dot 1.4s ease-in-out infinite; }
-.install-banner {
-  position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%) translateY(120px);
-  z-index: 998;
-  background: rgba(14,14,24,0.97); border: 1px solid rgba(167,139,250,0.25);
-  border-radius: 18px; padding: 16px 20px;
-  display: flex; align-items: center; gap: 14px;
-  box-shadow: 0 8px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(167,139,250,0.08), 0 0 32px rgba(99,68,255,0.14);
-  backdrop-filter: blur(24px);
-  transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease;
-  opacity: 0; pointer-events: none;
-  min-width: 300px; max-width: 420px;
-}
-.install-banner.show { transform: translateX(-50%) translateY(0); opacity: 1; pointer-events: all; }
-.install-icon { width: 46px; height: 46px; border-radius: 12px; flex-shrink: 0; background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(236,100,162,0.15)); border: 1px solid rgba(167,139,250,0.25); display: flex; align-items: center; justify-content: center; }
-.install-body { flex: 1; min-width: 0; }
-.install-title { font-size: 13px; font-weight: 800; letter-spacing: 0.5px; margin-bottom: 3px; }
-.install-sub { font-size: 11px; color: var(--muted); line-height: 1.5; }
-.install-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
-.btn-install { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 10px; color: white; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: 8px 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
-.btn-install:hover { transform: scale(1.05); box-shadow: 0 0 16px var(--glow-a); }
-.btn-install-dismiss { background: none; border: none; color: var(--muted2); font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-align: center; cursor: pointer; padding: 2px; transition: color 0.2s; font-family: inherit; text-transform: uppercase; }
-.btn-install-dismiss:hover { color: var(--muted); }
-.update-banner {
-  position: fixed; top: 70px; right: 20px; z-index: 997;
-  background: rgba(14,14,24,0.97); border: 1px solid rgba(56,189,248,0.3);
-  border-left: 3px solid var(--accent3); border-radius: 14px;
-  padding: 12px 16px; max-width: 280px;
-  display: flex; align-items: flex-start; gap: 10px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
-  backdrop-filter: blur(16px);
-  transform: translateX(320px); opacity: 0;
-  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-  pointer-events: none;
-}
-.update-banner.show { transform: translateX(0); opacity: 1; pointer-events: all; }
-.update-body { flex: 1; }
-.update-title { font-size: 12px; font-weight: 700; color: var(--accent3); letter-spacing: 0.5px; margin-bottom: 4px; }
-.update-sub { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
-.btn-update-reload { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.25); color: var(--accent3); font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 5px 12px; border-radius: 7px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-.btn-update-reload:hover { background: rgba(56,189,248,0.2); }
-.btn-update-close { background: none; border: none; color: var(--muted2); cursor: pointer; padding: 2px; line-height: 1; flex-shrink: 0; transition: color 0.2s; }
-.btn-update-close:hover { color: var(--text); }
+
+/* MOBILE */
 .mobile-playlist-toggle { display: none; }
-.mobile-sheet-overlay { display: none; position: fixed; inset: 0; z-index: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
+.mobile-sheet-overlay { display: none; position: fixed; inset: 0; z-index: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter:blur(4px); }
 .mobile-sheet-overlay.show { display: block; }
 
+/* ═══════════════════════════════
+   RESPONSIVE
+═══════════════════════════════ */
 @media (max-width: 900px) {
   .sidebar { width: 270px; min-width: 270px; }
   .logo-sub { font-size: 8px; }
@@ -579,6 +708,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   .controls-zone { padding: 12px 16px 18px; }
   .np-title { font-size: 18px; }
 }
+
 @media (max-width: 640px) {
   header { padding: 10px 14px; gap: 8px; }
   .logo-text { font-size: 16px; letter-spacing: 3px; }
@@ -594,13 +724,18 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
     border-right: none; border-top: 1px solid var(--glass-border);
     border-radius: 20px 20px 0 0; z-index: 999;
     background: rgba(10,10,20,0.97); backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
     transform: translateY(100%); transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
     box-shadow: 0 -8px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(167,139,250,0.08);
+    padding-bottom: var(--sab);
   }
   .sidebar.mobile-open { transform: translateY(0); }
-  .sidebar::before { content: ''; display: block; width: 36px; height: 4px; background: var(--muted2); border-radius: 2px; margin: 10px auto 4px; flex-shrink: 0; }
+  .sidebar::before {
+    content: ''; display: block; width: 36px; height: 4px;
+    background: var(--muted2); border-radius: 2px; margin: 10px auto 4px; flex-shrink: 0;
+  }
   .main-panel { flex: 1; width: 100%; }
-  .video-area { padding: 12px 12px 8px; }
+  .video-area { padding: 12px 12px 8px; padding-top: 14px; }
   .player-view { max-width: 100%; }
   .now-playing-info { margin-top: 10px; }
   .np-title { font-size: 15px; max-width: 100%; }
@@ -608,7 +743,13 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   .np-label { font-size: 8px; margin-bottom: 4px; }
   .status-bar { margin-top: 5px; gap: 5px; }
   .status-pill { font-size: 9px; padding: 2px 7px; }
-  .controls-zone { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); border-radius: 15px; padding: 10px 14px 14px; width: 100vw; z-index: 100; }
+  .controls-zone {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    border-radius: 15px; padding: 10px 14px 14px;
+    width: 100vw; z-index: 100;
+    padding-bottom: calc(14px + var(--sab));
+  }
   .progress-row { gap: 8px; margin-bottom: 10px; }
   .time { font-size: 10px; min-width: 30px; }
   .ctrl-row { gap: 0; }
@@ -625,6 +766,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
     font-size: 12px; font-weight: 700; letter-spacing: 1px; padding: 11px 18px;
     cursor: pointer; box-shadow: 0 0 28px var(--glow-a), 0 4px 20px rgba(0,0,0,0.5);
     transition: all 0.25s;
+    bottom: calc(20px + var(--sab));
   }
   .mobile-playlist-toggle:active { transform: scale(0.95); }
   .mobile-playlist-toggle.open { background: linear-gradient(135deg, var(--muted2), #2a2940); box-shadow: none; }
@@ -639,13 +781,12 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   .prog-track { height: 6px; border-radius: 6px; margin: 6px 0; }
   .prog-fill { border-radius: 6px; }
   .prog-fill::after { width: 14px; height: 14px; right: -7px; opacity: 1; }
-  .install-banner { bottom: 90px; min-width: calc(100vw - 28px); max-width: calc(100vw - 28px); }
-  .update-banner { right: 14px; max-width: calc(100vw - 28px); }
 }
+
 @media (max-width: 380px) {
   header { padding: 9px 10px; }
   .logo-text { font-size: 14px; letter-spacing: 2px; }
-  .controls-zone { padding: 8px 10px 12px; }
+  .controls-zone { padding: 8px 10px 12px; padding-bottom: calc(12px + var(--sab)); }
   .ctrl-group { gap: 2px; }
   .play-btn { width: 46px; height: 46px; }
   .c-btn { width: 30px; height: 30px; }
@@ -657,49 +798,37 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 <body>
 
 <div class="bg-scene">
-  <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
   <div class="grid-overlay"></div>
 </div>
 
-<div class="offline-bar" id="offline-bar">
-  <div class="offline-dot"></div>
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-    <line x1="1" y1="1" x2="23" y2="23"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
-    <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
-    <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
-    <circle cx="12" cy="20" r="1" fill="currentColor"/>
-  </svg>
-  <span class="offline-label">Tidak ada koneksi internet</span>
-</div>
-
-<div class="install-banner" id="install-banner">
-  <div class="install-icon">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="url(#ig)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <defs><linearGradient id="ig" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#ec64a2"/></linearGradient></defs>
+<!-- ═══ PWA INSTALL BANNER ═══ -->
+<div id="pwa-install-bar">
+  <div class="pwa-install-icon">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
     </svg>
   </div>
-  <div class="install-body">
-    <div class="install-title">Pasang Qoovy</div>
-    <div class="install-sub">Tambahkan ke layar utama untuk akses cepat</div>
+  <div class="pwa-install-text">
+    <div class="pwa-install-title">Install Qoovy</div>
+    <div class="pwa-install-sub">Pasang di perangkat untuk akses cepat</div>
   </div>
-  <div class="install-actions">
-    <button class="btn-install" id="btn-install-pwa">Pasang</button>
-    <button class="btn-install-dismiss" id="btn-install-dismiss">Nanti</button>
-  </div>
+  <button class="btn-pwa-install" id="btn-pwa-install">Install</button>
+  <button class="btn-pwa-dismiss" id="btn-pwa-dismiss">✕</button>
 </div>
 
-<div class="update-banner" id="update-banner">
-  <div class="update-body">
-    <div class="update-title">Update Tersedia</div>
-    <div class="update-sub">Versi terbaru Qoovy sudah siap.</div>
-    <button class="btn-update-reload" onclick="pwaReloadForUpdate()">Muat Ulang</button>
-  </div>
-  <button class="btn-update-close" onclick="hideUpdateBanner()">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  </button>
+<!-- ═══ OFFLINE BAR ═══ -->
+<div id="offline-bar">
+  <span class="offline-dot"></span>
+  Tidak ada koneksi internet — beberapa fitur mungkin tidak tersedia
+</div>
+
+<!-- ═══ UPDATE BAR ═══ -->
+<div id="update-bar">
+  <span class="update-text">Update Qoovy tersedia!</span>
+  <button class="btn-update-now" id="btn-update-now">Perbarui Sekarang</button>
 </div>
 
 <div class="mobile-sheet-overlay" id="mobile-sheet-overlay" onclick="closeMobilePlaylist()"></div>
@@ -722,6 +851,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 </header>
 
 <div class="app">
+  <!-- SIDEBAR -->
   <div class="sidebar" id="sidebar">
     <div class="search-section">
       <div class="section-label">Cari Musik</div>
@@ -736,10 +866,12 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       </div>
       <div class="search-history-dropdown" id="search-history-dropdown"></div>
     </div>
+
     <div class="search-mode-info" id="search-mode-info">
       <span class="mode-dot"></span>
       <span id="mode-text">Mode demo — masukkan API Key untuk pencarian nyata</span>
     </div>
+
     <div class="sidebar-tabs">
       <button class="tab-btn active" id="tab-playlist" onclick="switchTab('playlist')">
         Playlist <span class="tab-badge" id="badge-playlist">0</span>
@@ -751,6 +883,8 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
         History <span class="tab-badge hist-badge" id="badge-history">0</span>
       </button>
     </div>
+
+    <!-- PLAYLIST TAB -->
     <div class="tab-panel active" id="panel-playlist">
       <div class="playlist-head">
         <div class="section-label" style="margin:0">Playlist</div>
@@ -758,12 +892,18 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       </div>
       <div class="track-list" id="track-list">
         <div class="empty-wrap">
-          <div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+          <div class="empty-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+            </svg>
+          </div>
           <div class="empty-title">Belum ada lagu</div>
-          <div class="empty-sub">Set Code Key lalu cari musik favoritmu</div>
+          <div class="empty-sub">Set API Key lalu cari musik favoritmu</div>
         </div>
       </div>
     </div>
+
+    <!-- QUEUE TAB -->
     <div class="tab-panel" id="panel-queue">
       <div class="queue-head">
         <div class="queue-head-title">Antrean Lagu</div>
@@ -771,12 +911,19 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       </div>
       <div class="track-list" id="queue-list">
         <div class="empty-wrap">
-          <div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div>
+          <div class="empty-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+              <line x1="8" y1="18" x2="21" y2="18"/>
+            </svg>
+          </div>
           <div class="empty-title">Antrean kosong</div>
-          <div class="empty-sub">Tekan + pada lagu untuk menambahkan ke antrean</div>
+          <div class="empty-sub">Tekan tombol + pada lagu untuk menambahkan ke antrean</div>
         </div>
       </div>
     </div>
+
+    <!-- HISTORY TAB -->
     <div class="tab-panel" id="panel-history">
       <div class="history-head">
         <div class="history-head-title">Riwayat Diputar</div>
@@ -784,7 +931,11 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       </div>
       <div class="track-list" id="history-list">
         <div class="empty-wrap">
-          <div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div class="empty-icon-wrap">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
           <div class="empty-title">Belum ada riwayat</div>
           <div class="empty-sub">Lagu yang diputar akan muncul di sini</div>
         </div>
@@ -792,6 +943,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
     </div>
   </div>
 
+  <!-- MAIN PANEL -->
   <div class="main-panel">
     <div class="video-area">
       <div class="idle-view" id="idle-view">
@@ -810,38 +962,29 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 
       <div class="player-view" id="player-view">
         <div class="video-glass-wrap">
-          <div class="iframe-shield" id="iframe-shield"></div>
           <iframe id="yt-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
           <div class="video-shimmer"></div>
           <div class="vid-loading" id="vid-loading"><div class="spinner"></div></div>
           <div class="ad-overlay" id="ad-overlay">
-            <div class="ad-shield" id="ad-shield-icon">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <div class="ad-shield">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 <polyline points="9 12 11 14 15 10"/>
               </svg>
             </div>
-            <div class="ad-title" id="ad-title">Shield Aktif</div>
-            <div class="ad-phase" id="ad-phase">MEMUAT KONTEN</div>
-            <div class="ad-sub" id="ad-sub">Menyiapkan lagu untukmu...</div>
-            <div class="ad-progress-bar"><div class="ad-progress-fill" id="ad-progress-fill"></div></div>
-            <div class="ad-countdown" id="ad-countdown" style="display:none">3</div>
-            <button class="btn-skip-now" id="btn-skip-now" onclick="skipAdNow()" style="display:none">Lewati Sekarang</button>
-          </div>
-          <div class="ad-block-status" id="ad-block-status">
-            <div class="ad-block-status-dot"></div>
-            SHIELD AKTIF
+            <div class="ad-title">Iklan Diblokir</div>
+            <div class="ad-sub">Melewati iklan secara otomatis...</div>
+            <div class="ad-countdown" id="ad-countdown">5</div>
+            <button class="btn-skip-now" onclick="skipAdNow()">Lewati Sekarang</button>
           </div>
         </div>
-
         <div class="now-playing-info">
           <div class="np-label">Now Playing</div>
           <div class="np-title" id="np-title">--</div>
           <div class="np-ch" id="np-ch">--</div>
           <div class="status-bar">
-            <span class="status-pill pill-source">Musik Lengkap</span>
-            <span class="status-pill pill-adblock" id="pill-adblock">Bebas Iklan</span>
-            <span class="status-pill pill-adblock-count" id="pill-adblock-count">0 iklan diblokir</span>
+            <span class="status-pill pill-source">youtube-nocookie</span>
+            <span class="status-pill pill-adblock" id="pill-adblock">AdBlock ON</span>
             <span class="status-pill pill-queue" id="pill-queue">Queue</span>
           </div>
         </div>
@@ -855,7 +998,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       <div class="kbd-hint-item"><span class="kbd-key">M</span><span class="kbd-desc">Mute</span></div>
       <div class="kbd-hint-item"><span class="kbd-key">S</span><span class="kbd-desc">Shuffle</span></div>
       <div class="kbd-hint-item"><span class="kbd-key">R</span><span class="kbd-desc">Repeat</span></div>
-      <div class="kbd-hint-item"><span class="kbd-key">Q</span><span class="kbd-desc">Queue</span></div>
+      <div class="kbd-hint-item"><span class="kbd-key">Q</span><span class="kbd-desc">Queue Tab</span></div>
     </div>
 
     <div class="controls-zone">
@@ -931,6 +1074,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   <span id="mob-toggle-label">Playlist</span>
 </button>
 
+<!-- MODAL -->
 <div class="modal-backdrop" id="modal-backdrop">
   <div class="modal">
     <div class="modal-icon">
@@ -941,7 +1085,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
     <div class="modal-title">Qoovy Membutuhkan Code Key</div>
     <div class="modal-desc">
       Masukkan Code Key, tidak ada dan tidak Tahu? tanya Qabil.
-      Aktifkan <strong>Code Key</strong> untuk bisa menggunakan platform Qoovy.
+      Aktifkan <strong>Code Key</strong> Untuk bisa menggunakan platform Qoovy.
       Tanpa Code Key, mode demo tetap bisa digunakan (Hanya 10 Lagu).
     </div>
     <div class="modal-input-wrap">
@@ -968,788 +1112,198 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
+'use strict';
+
+// ═══════════════════════════════════════════
+//  PWA — SERVICE WORKER REGISTRATION
+// ═══════════════════════════════════════════
+var swReg = null;
+var deferredInstallPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(function(reg) {
+        swReg = reg;
+        console.log('[Qoovy PWA] Service Worker registered:', reg.scope);
+
+        // Check for updates
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          newWorker.addEventListener('statechange', function() {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
+              document.getElementById('update-bar').classList.add('show');
+            }
+          });
+        });
+      })
+      .catch(function(err) {
+        console.warn('[Qoovy PWA] SW registration failed:', err);
+      });
+
+    // Detect controller change (after update)
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      window.location.reload();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+//  PWA INSTALL PROMPT (Android/Desktop Chrome)
+// ═══════════════════════════════════════════
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show install bar after 2s
+  setTimeout(function() {
+    var bar = document.getElementById('pwa-install-bar');
+    if (bar && !localStorage.getItem('qoovy_install_dismissed')) {
+      bar.classList.add('show');
+    }
+  }, 2000);
+});
+
+document.getElementById('btn-pwa-install').addEventListener('click', function() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  deferredInstallPrompt.userChoice.then(function(choice) {
+    if (choice.outcome === 'accepted') {
+      toast('Qoovy berhasil diinstall! 🎵');
+      document.getElementById('pwa-install-bar').classList.remove('show');
+    }
+    deferredInstallPrompt = null;
+  });
+});
+
+document.getElementById('btn-pwa-dismiss').addEventListener('click', function() {
+  document.getElementById('pwa-install-bar').classList.remove('show');
+  try { localStorage.setItem('qoovy_install_dismissed', '1'); } catch(e) {}
+});
+
+window.addEventListener('appinstalled', function() {
+  document.getElementById('pwa-install-bar').classList.remove('show');
+  deferredInstallPrompt = null;
+  toast('Qoovy terpasang di perangkat!');
+});
+
+// ═══════════════════════════════════════════
+//  UPDATE BUTTON
+// ═══════════════════════════════════════════
+document.getElementById('btn-update-now').addEventListener('click', function() {
+  if (swReg && swReg.waiting) {
+    swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload();
+  }
+});
+
+// ═══════════════════════════════════════════
+//  ONLINE / OFFLINE DETECTION
+// ═══════════════════════════════════════════
+function updateOnlineStatus() {
+  var bar = document.getElementById('offline-bar');
+  if (navigator.onLine) {
+    bar.classList.remove('show');
+  } else {
+    bar.classList.add('show');
+    toast('Tidak ada koneksi — streaming tidak tersedia', 'err');
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// ═══════════════════════════════════════════
+//  MEDIA SESSION API (lock screen controls)
+// ═══════════════════════════════════════════
+function updateMediaSession(track) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: track.title || 'Qoovy',
+    artist: track.ch || '',
+    album: 'Qoovy Music Streaming',
+    artwork: [
+      { src: track.thumb || 'icons/icon-96.png', sizes: '96x96', type: 'image/png' },
+      { src: track.thumb || 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ]
+  });
+  navigator.mediaSession.setActionHandler('play', function() { togglePlay(); });
+  navigator.mediaSession.setActionHandler('pause', function() { togglePlay(); });
+  navigator.mediaSession.setActionHandler('previoustrack', function() { prevTrack(); });
+  navigator.mediaSession.setActionHandler('nexttrack', function() { nextTrack(); });
+  navigator.mediaSession.setActionHandler('seekto', function(details) {
+    if (details.seekTime !== undefined) {
+      simCur = details.seekTime;
+      ytCmd('seekTo', [details.seekTime, true]);
+      updateProgressUI();
+    }
+  });
+}
+
+function setMediaSessionPlayback(playing) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
+}
+
+// ═══════════════════════════════════════════
+//  PREVENT SLEEP (Wake Lock API)
+// ═══════════════════════════════════════════
+var wakeLock = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', function() { wakeLock = null; });
+  } catch(e) {}
+}
+async function releaseWakeLock() {
+  if (wakeLock) { try { await wakeLock.release(); } catch(e) {} wakeLock = null; }
+}
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && isPlaying) requestWakeLock();
+  else releaseWakeLock();
+});
+
+// ═══════════════════════════════════════════
 //  STORAGE KEYS
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 var LS_SEARCH_HIST = 'qoovy_search_history';
 var LS_PLAY_HIST   = 'qoovy_play_history';
 
-// ════════════════════════════════════════════════════════════
-//  STATE GLOBAL
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
 var API_KEY = '';
 var tracks = [];
 var curIdx = -1;
 var isPlaying = false;
 var isShuffle = false;
-var repeatMode = 0;
+var repeatMode = 0; // 0=off, 1=all, 2=one
 var isMuted = false;
 var adBlockEnabled = true;
 var volLevel = 80;
-
 var shuffleQueue = [];
 var shufflePos = 0;
 var musicQueue = [];
 var searchHistory = [];
 var playHistory = [];
-
 var progTimer = null;
 var simCur = 0;
 var simDur = 0;
-
-var adsBlockedCount = 0;
-var CORS_PROXIES = [
-  'https://corsproxy.io/?url=',
-  'https://api.allorigins.win/get?url=',
-];
+var adCountdownTimer = null;
+var adCountVal = 5;
+var isAdShowing = false;
+var ytAPIReady = false;
+var infoRequestTimer = null;
+var adWatchTimer = null;
+var CORS_PROXIES = ['https://corsproxy.io/?url=','https://api.allorigins.win/get?url='];
 var corsProxyIdx = 0;
 var mobilePlaylistOpen = false;
 var activeTab = 'playlist';
 
-// ════════════════════════════════════════════════════════════
-//  TRACK END GUARD
-// ════════════════════════════════════════════════════════════
-var _trackEndFired = false;
-
-// ════════════════════════════════════════════════════════════
-//  ADBLOCK SYSTEM — STRATEGI BARU: MUTE PENUH SELAMA WINDOW AMAN
-//
-//  CARA KERJA:
-//  1. Saat playTrack() → MUTE TOTAL + tampilkan overlay
-//  2. Tunggu state=1 (video mulai play) → mulai countdown 8 detik
-//  3. Selama 8 detik: audio tetap MUTE, overlay tampil
-//     → Ini memastikan iklan preroll (maks 5-6 detik) tidak terdengar
-//  4. Setelah 8 detik → unmute, sembunyikan overlay
-//  5. Jika state=0 (video end) terjadi SEBELUM 8 detik selesai
-//     → skip iklan (pindah lagu), karena iklan sangat pendek
-//
-//  KENAPA LEBIH RELIABLE:
-//  - Tidak bergantung pada postMessage/videoData yang sering tidak reliable
-//  - Iklan YouTube preroll: 0-5 detik (skippable) atau 5-15 detik (non-skip)
-//  - Dengan mute 8 detik: user tidak mendengar iklan sama sekali
-//  - Overlay menutupi visual iklan
-// ════════════════════════════════════════════════════════════
-var ADBLOCK = {
-  session: 0,
-  muteWindowMs: 8000,      // durasi mute setelah video mulai play (ms)
-  releaseTimer: null,
-  countdownTimer: null,
-  progressTimer: null,
-  stateOneReceived: false,  // apakah sudah menerima state=1
-  released: false,          // apakah overlay sudah dilepas
-  muteWas: false,           // status mute user sebelum adblock
-
-  // Dipanggil saat playTrack() baru
-  init: function(videoId) {
-    this.session++;
-    var s = this.session;
-    this.stateOneReceived = false;
-    this.released = false;
-    this.muteWas = isMuted;
-
-    this._stopAll();
-    this._showOverlay('MEMUAT KONTEN', 'Menyiapkan lagu untukmu...', false);
-    this._setShield(true);
-    this._hardMute(true); // MUTE TOTAL dari awal
-
-    // Fallback: jika state=1 tidak pernah datang dalam 15 detik, release paksa
-    var self = this;
-    this.releaseTimer = setTimeout(function() {
-      if (self.session !== s) return;
-      self._release(s);
-    }, 15000);
-
-    return s;
-  },
-
-  // Dipanggil dari handleStateChange saat state === 1 (video playing)
-  onPlaying: function(session) {
-    if (this.session !== session) return;
-    if (this.stateOneReceived) return; // sudah pernah dipanggil, skip
-    this.stateOneReceived = true;
-
-    // ── FIX BUG 1: Update UI play/pause SEGERA saat state=1 ──
-    // Ini dilakukan di handleStateChange, tapi kita pastikan di sini juga
-    _setPlayStateUI(true);
-
-    if (!adBlockEnabled) {
-      // Adblock mati → langsung release
-      this._release(session);
-      return;
-    }
-
-    // Adblock aktif → tahan mute selama muteWindowMs
-    var self = this;
-    var ms = this.muteWindowMs;
-    var elapsed = 0;
-    var step = 200;
-
-    // Update progress bar secara visual selama countdown
-    if (this.progressTimer) clearInterval(this.progressTimer);
-    this.progressTimer = setInterval(function() {
-      if (self.session !== session) { clearInterval(self.progressTimer); return; }
-      elapsed += step;
-      var pct = Math.min(100, (elapsed / ms) * 100);
-      self._setProgress(pct);
-      // Update countdown angka (hitung mundur dari 8 ke 0)
-      var remaining = Math.max(0, Math.ceil((ms - elapsed) / 1000));
-      var cdEl = document.getElementById('ad-countdown');
-      if (cdEl && cdEl.style.display !== 'none') cdEl.textContent = remaining;
-      if (elapsed >= ms) {
-        clearInterval(self.progressTimer);
-        self.progressTimer = null;
-      }
-    }, step);
-
-    // Release setelah muteWindowMs
-    if (this.releaseTimer) clearTimeout(this.releaseTimer);
-    this.releaseTimer = setTimeout(function() {
-      if (self.session !== session) return;
-      self._release(session);
-    }, ms);
-
-    // Tampilkan countdown di overlay setelah 1 detik
-    setTimeout(function() {
-      if (self.session !== session || self.released) return;
-      var cdEl = document.getElementById('ad-countdown');
-      var skipBtn = document.getElementById('btn-skip-now');
-      if (cdEl) { cdEl.style.display = 'block'; cdEl.textContent = Math.ceil(ms / 1000); }
-      if (skipBtn) skipBtn.style.display = 'block';
-    }, 1000);
-  },
-
-  // Dipanggil saat state=0 (video selesai) selama masih dalam mute window
-  onEnded: function(session) {
-    if (this.session !== session) return;
-    if (this.released) return;
-    // Video berakhir sangat cepat → kemungkinan iklan pendek yang tidak bisa di-skip
-    // Langsung pindah lagu
-    this._stopAll();
-    this._hardMute(true); // tetap mute sampai lagu baru siap
-  },
-
-  // Lepas overlay dan unmute
-  _release: function(session) {
-    if (this.session !== session) return;
-    if (this.released) return;
-    this.released = true;
-    this._stopAll();
-    this._setProgress(100);
-    this._setShield(false);
-
-    var overlay = document.getElementById('ad-overlay');
-    if (overlay) overlay.classList.remove('show');
-
-    // Restore audio
-    if (!this.muteWas && !isMuted) {
-      this._hardMute(false);
-    }
-
-    // Badge "Shield aktif" sebentar
-    var badge = document.getElementById('ad-block-status');
-    if (badge) {
-      badge.classList.add('show');
-      setTimeout(function() { badge.classList.remove('show'); }, 2200);
-    }
-
-    adsBlockedCount++;
-    updateAdCount();
-  },
-
-  // Paksa skip (user klik "Lewati")
-  forceSkip: function() {
-    if (this.released) return;
-    var s = this.session;
-    this._stopAll();
-    this._release(s);
-  },
-
-  // Matikan semua (user toggle adblock off, atau pindah lagu)
-  disable: function() {
-    this._stopAll();
-    this.released = true;
-    var overlay = document.getElementById('ad-overlay');
-    if (overlay) overlay.classList.remove('show');
-    this._setShield(false);
-    if (!isMuted) this._hardMute(false);
-  },
-
-  _showOverlay: function(phase, sub, warn) {
-    var overlay = document.getElementById('ad-overlay');
-    var shieldEl = document.getElementById('ad-shield-icon');
-    var titleEl = document.getElementById('ad-title');
-    var phaseEl = document.getElementById('ad-phase');
-    var subEl = document.getElementById('ad-sub');
-    var cdEl = document.getElementById('ad-countdown');
-    var skipBtn = document.getElementById('btn-skip-now');
-    if (warn) {
-      if (shieldEl) shieldEl.classList.add('warn');
-      if (titleEl) { titleEl.textContent = 'IKLAN DIBLOKIR'; titleEl.classList.add('warn'); }
-    } else {
-      if (shieldEl) shieldEl.classList.remove('warn');
-      if (titleEl) { titleEl.textContent = 'Shield Aktif'; titleEl.classList.remove('warn'); }
-    }
-    if (phaseEl) phaseEl.textContent = phase;
-    if (subEl) subEl.textContent = sub;
-    if (cdEl) { cdEl.style.display = 'none'; cdEl.textContent = '8'; }
-    if (skipBtn) skipBtn.style.display = 'none';
-    this._setProgress(0);
-    if (overlay) overlay.classList.add('show');
-  },
-
-  _setProgress: function(pct) {
-    var fill = document.getElementById('ad-progress-fill');
-    if (fill) fill.style.width = Math.min(100, pct) + '%';
-  },
-
-  _setShield: function(on) {
-    var shield = document.getElementById('iframe-shield');
-    if (!shield) return;
-    if (on) shield.classList.add('blocking');
-    else shield.classList.remove('blocking');
-  },
-
-  _hardMute: function(mute) {
-    var iframe = document.getElementById('yt-iframe');
-    if (!iframe || !iframe.contentWindow) return;
-    if (mute) {
-      _ytCmd('mute', []);
-      _ytCmd('setVolume', [0]);
-    } else {
-      _ytCmd('unMute', []);
-      _ytCmd('setVolume', [volLevel]);
-    }
-  },
-
-  _stopAll: function() {
-    if (this.releaseTimer) { clearTimeout(this.releaseTimer); this.releaseTimer = null; }
-    if (this.progressTimer) { clearInterval(this.progressTimer); this.progressTimer = null; }
-  }
-};
-
-function skipAdNow() {
-  ADBLOCK.forceSkip();
-}
-
-function updateAdCount() {
-  var el = document.getElementById('pill-adblock-count');
-  if (!el) return;
-  if (adsBlockedCount > 0) { el.textContent = adsBlockedCount + ' iklan diblokir'; el.classList.add('show'); }
-  else el.classList.remove('show');
-}
-
-// ════════════════════════════════════════════════════════════
-//  TOGGLE AD BLOCK
-// ════════════════════════════════════════════════════════════
-function toggleAdBlock() {
-  adBlockEnabled = !adBlockEnabled;
-  var badge = document.getElementById('adb-badge');
-  var lbl = document.getElementById('adb-label');
-  var pill = document.getElementById('pill-adblock');
-  if (adBlockEnabled) {
-    badge.classList.remove('off'); lbl.textContent = 'AD-FREE ON';
-    pill.classList.remove('off'); pill.textContent = 'Bebas Iklan';
-    toast('AdBlock aktif');
-  } else {
-    badge.classList.add('off'); lbl.textContent = 'AD-FREE OFF';
-    pill.classList.add('off'); pill.textContent = 'AdBlock OFF';
-    ADBLOCK.disable();
-    toast('AdBlock dimatikan');
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-//  YOUTUBE IFRAME HELPERS
-// ════════════════════════════════════════════════════════════
-function buildIframeSrc(videoId) {
-  var origin = window.location.origin || 'http://localhost';
-  var ts = Date.now();
-  return 'https://www.youtube-nocookie.com/embed/' + videoId
-    + '?autoplay=1&enablejsapi=1&controls=0&modestbranding=1&rel=0'
-    + '&iv_load_policy=3&playsinline=1&cc_load_policy=0&disablekb=1'
-    + '&fs=0&hl=id&color=white&start=0'
-    + '&origin=' + encodeURIComponent(origin)
-    + '&_t=' + ts;
-}
-
-function _ytCmd(func, args) {
-  var iframe = document.getElementById('yt-iframe');
-  if (!iframe || !iframe.contentWindow) return;
-  try {
-    iframe.contentWindow.postMessage(JSON.stringify({
-      event: 'command', func: func, args: args || []
-    }), '*');
-  } catch(e) {}
-}
-
-// ════════════════════════════════════════════════════════════
-//  MESSAGE LISTENER dari YouTube iframe
-// ════════════════════════════════════════════════════════════
-window.addEventListener('message', function(e) {
-  if (!e.origin || !e.origin.includes('youtube')) return;
-  try {
-    var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-    if (!data) return;
-
-    if (data.event === 'onReady') {
-      // Pastikan mute saat ready
-      _ytCmd('mute', []);
-      _ytCmd('setVolume', [0]);
-    }
-
-    if (data.event === 'onStateChange') {
-      handleStateChange(data.info);
-    }
-
-    if (data.event === 'infoDelivery' && data.info) {
-      var info = data.info;
-      if (info.currentTime !== undefined) simCur = info.currentTime;
-      if (info.duration !== undefined && info.duration > 0) simDur = info.duration;
-      if (info.currentTime !== undefined || info.duration !== undefined) updateProgressUI();
-    }
-  } catch(ex) {}
-});
-
-// ════════════════════════════════════════════════════════════
-//  STATE CHANGE HANDLER
-//  FIX BUG 2: setPlayStateUI() SELALU dipanggil tanpa syarat
-//  berdasarkan event YT, terlepas dari status adblock
-// ════════════════════════════════════════════════════════════
-function handleStateChange(state) {
-  var session = ADBLOCK.session;
-
-  if (state === 1) {
-    // Video playing — update UI SEGERA
-    hideLdr();
-    _setPlayStateUI(true);   // ← FIX: langsung update tombol
-    startProgTimer();
-
-    // Beritahu ADBLOCK untuk mulai countdown mute window
-    ADBLOCK.onPlaying(session);
-
-  } else if (state === 2) {
-    // Paused
-    _setPlayStateUI(false);
-    stopProgTimer();
-
-  } else if (state === 0) {
-    // Ended
-    _setPlayStateUI(false);
-    stopProgTimer();
-    ADBLOCK.onEnded(session);
-    safeHandleTrackEnd();
-
-  } else if (state === 3) {
-    // Buffering — jangan ubah play state
-    showLdr();
-
-  } else if (state === -1 || state === 5) {
-    hideLdr();
-  }
-}
-
-// ════════════════════════════════════════════════════════════
-//  SAFE TRACK END
-// ════════════════════════════════════════════════════════════
-function safeHandleTrackEnd() {
-  if (_trackEndFired) return;
-  _trackEndFired = true;
-  setTimeout(function() { _trackEndFired = false; }, 1200);
-  _doHandleTrackEnd();
-}
-
-function _doHandleTrackEnd() {
-  if (repeatMode === 2) { reloadCurrentTrack(); return; }
-
-  if (musicQueue.length > 0) {
-    var nxt = musicQueue.shift();
-    renderQueueList();
-    updateQueueBadge();
-    var pill = document.getElementById('pill-queue');
-    if (pill) {
-      if (musicQueue.length > 0) { pill.textContent = 'Queue: ' + musicQueue.length; pill.classList.add('show'); }
-      else pill.classList.remove('show');
-    }
-    var fi = tracks.findIndex(function(t) { return t.id === nxt.id; });
-    if (fi !== -1) {
-      playTrack(fi);
-    } else {
-      var ins = (curIdx >= 0 ? curIdx + 1 : tracks.length);
-      tracks.splice(ins, 0, nxt);
-      renderTracks();
-      playTrack(ins);
-    }
-    return;
-  }
-
-  _doNextTrack();
-}
-
-// ════════════════════════════════════════════════════════════
-//  PROGRESS BAR
-// ════════════════════════════════════════════════════════════
-var progTick = 0;
-function startProgTimer() {
-  stopProgTimer();
-  progTick = 0;
-  progTimer = setInterval(function() {
-    if (!isPlaying) return;
-    simCur += 0.9;
-    if (simDur > 0 && simCur >= simDur - 0.5) {
-      simCur = simDur;
-      updateProgressUI();
-      stopProgTimer();
-      _setPlayStateUI(false);
-      safeHandleTrackEnd();
-      return;
-    }
-    updateProgressUI();
-    progTick++;
-    if (progTick % 5 === 0) {
-      // Request info berkala untuk sync
-      var iframe = document.getElementById('yt-iframe');
-      if (iframe && iframe.contentWindow) {
-        try {
-          iframe.contentWindow.postMessage(JSON.stringify({
-            event: 'listening', id: 1, channel: 'widget',
-            params: JSON.stringify({ currentTime: true, duration: true })
-          }), '*');
-        } catch(e) {}
-      }
-    }
-  }, 900);
-}
-
-function stopProgTimer() {
-  if (progTimer) { clearInterval(progTimer); progTimer = null; }
-}
-
-function updateProgressUI() {
-  if (simDur > 0) {
-    var pct = Math.min(100, (simCur / simDur) * 100);
-    document.getElementById('prog-fill').style.width = pct + '%';
-    document.getElementById('t-cur').textContent = fmt(simCur);
-    document.getElementById('t-dur').textContent = fmt(simDur);
-  }
-}
-
-function fmt(s) {
-  s = Math.max(0, Math.floor(s));
-  return Math.floor(s/60) + ':' + ('0'+(s%60)).slice(-2);
-}
-
-function seekTo(e) {
-  var rect = document.getElementById('prog-track').getBoundingClientRect();
-  var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-  simCur = pct * (simDur || 300);
-  _ytCmd('seekTo', [simCur, true]);
-  updateProgressUI();
-}
-
-// ════════════════════════════════════════════════════════════
-//  PLAYBACK
-// ════════════════════════════════════════════════════════════
-function playTrack(idx) {
-  if (idx < 0 || idx >= tracks.length) return;
-  curIdx = idx;
-  var t = tracks[idx];
-
-  // Reset state
-  stopProgTimer();
-  simCur = 0;
-  simDur = 0;
-  progTick = 0;
-  _trackEndFired = false;
-
-  // Reset UI ke "stopped"
-  _setPlayStateUI(false);
-
-  // Tampilkan player
-  document.getElementById('idle-view').style.display = 'none';
-  document.getElementById('player-view').style.display = 'block';
-  document.getElementById('idle-disc').classList.add('spin');
-  showLdr();
-
-  // Reset progress UI
-  document.getElementById('prog-fill').style.width = '0%';
-  document.getElementById('t-cur').textContent = '0:00';
-  document.getElementById('t-dur').textContent = '0:00';
-
-  // Info lagu
-  document.getElementById('np-title').textContent = t.title;
-  document.getElementById('np-ch').textContent = t.ch;
-
-  // Init ADBLOCK (mute + overlay)
-  ADBLOCK.init(t.id);
-
-  // Load iframe
-  document.getElementById('yt-iframe').src = buildIframeSrc(t.id);
-
-  // Update playlist UI
-  addPlayHistory(t);
-  renderTracks();
-  scrollToTrack(idx);
-
-  // Fallback sembunyikan spinner
-  setTimeout(function() { hideLdr(); }, 15000);
-
-  if (window.innerWidth <= 640) setTimeout(closeMobilePlaylist, 200);
-}
-
-function reloadCurrentTrack() {
-  if (curIdx < 0) return;
-  stopProgTimer();
-  simCur = 0; simDur = 0;
-  _trackEndFired = false;
-  _setPlayStateUI(false);
-  var t = tracks[curIdx];
-  ADBLOCK.init(t.id);
-  document.getElementById('yt-iframe').src = buildIframeSrc(t.id);
-  showLdr();
-}
-
-function togglePlay() {
-  if (curIdx < 0) { if (tracks.length > 0) playTrack(0); return; }
-  if (isPlaying) {
-    _ytCmd('pauseVideo', []);
-    _setPlayStateUI(false);
-    stopProgTimer();
-  } else {
-    _ytCmd('playVideo', []);
-    // UI akan diupdate oleh handleStateChange(1) dari YT
-  }
-}
-
-function prevTrack() {
-  if (!tracks.length) return;
-  playTrack(isShuffle ? getPrevShuffleIdx() : (curIdx - 1 + tracks.length) % tracks.length);
-}
-
-function nextTrack() {
-  if (!tracks.length) return;
-  if (musicQueue.length > 0) {
-    _trackEndFired = false;
-    safeHandleTrackEnd();
-    return;
-  }
-  _doNextTrack();
-}
-
-function _doNextTrack() {
-  if (!tracks.length) return;
-  var ni;
-  if (isShuffle) {
-    ni = getNextShuffleIdx();
-  } else {
-    if (repeatMode === 1) {
-      ni = (curIdx + 1) % tracks.length;
-    } else {
-      ni = curIdx + 1;
-      if (ni >= tracks.length) {
-        toast('Playlist selesai');
-        _setPlayStateUI(false);
-        stopProgTimer();
-        return;
-      }
-    }
-  }
-  playTrack(ni);
-}
-
-// ════════════════════════════════════════════════════════════
-//  SET PLAY STATE UI — HANYA UPDATE UI, tidak kontrol YT
-//  FIX BUG 2: Pisah dari logika adblock supaya selalu sync
-// ════════════════════════════════════════════════════════════
-function _setPlayStateUI(state) {
-  isPlaying = state;
-  document.getElementById('ico-play').style.display = state ? 'none' : 'block';
-  document.getElementById('ico-pause').style.display = state ? 'block' : 'none';
-  var disc = document.getElementById('idle-disc');
-  if (state) disc.classList.add('spin');
-  else disc.classList.remove('spin');
-}
-
-// ════════════════════════════════════════════════════════════
-//  SHUFFLE & REPEAT
-// ════════════════════════════════════════════════════════════
-function buildShuffleQueue(currentIdx) {
-  var indices = [];
-  for (var i = 0; i < tracks.length; i++) { if (i !== currentIdx) indices.push(i); }
-  for (var j = indices.length - 1; j > 0; j--) {
-    var k = Math.floor(Math.random() * (j + 1));
-    var tmp = indices[j]; indices[j] = indices[k]; indices[k] = tmp;
-  }
-  if (currentIdx >= 0) indices.unshift(currentIdx);
-  shuffleQueue = indices; shufflePos = 0;
-}
-function getNextShuffleIdx() {
-  if (!shuffleQueue.length) buildShuffleQueue(curIdx);
-  shufflePos++;
-  if (shufflePos >= shuffleQueue.length) { buildShuffleQueue(-1); shufflePos = 0; }
-  return shuffleQueue[shufflePos] !== undefined ? shuffleQueue[shufflePos] : 0;
-}
-function getPrevShuffleIdx() {
-  if (shufflePos > 0) shufflePos--;
-  return shuffleQueue[shufflePos] !== undefined ? shuffleQueue[shufflePos] : 0;
-}
-function toggleShuffle() {
-  isShuffle = !isShuffle;
-  document.getElementById('btn-shuf').classList.toggle('lit', isShuffle);
-  if (isShuffle) { buildShuffleQueue(curIdx); toast('Acak: ON'); }
-  else { shuffleQueue = []; shufflePos = 0; toast('Acak: OFF'); }
-}
-function toggleRepeat() {
-  repeatMode = (repeatMode + 1) % 3;
-  var btn = document.getElementById('btn-rep');
-  btn.classList.remove('lit', 'repeat-one', 'lit-yellow');
-  if (repeatMode === 0) toast('Ulangi: OFF');
-  else if (repeatMode === 1) { btn.classList.add('lit'); toast('Ulangi: Semua'); }
-  else if (repeatMode === 2) { btn.classList.add('lit', 'repeat-one'); toast('Ulangi: Satu lagu'); }
-}
-
-// ════════════════════════════════════════════════════════════
-//  VOLUME
-// ════════════════════════════════════════════════════════════
-function onVolSlider(v) {
-  volLevel = Number(v);
-  if (!isMuted && ADBLOCK.released) _ytCmd('setVolume', [volLevel]);
-}
-function toggleMute() {
-  isMuted = !isMuted;
-  if (isMuted) {
-    _ytCmd('mute', []);
-  } else {
-    if (ADBLOCK.released) {
-      _ytCmd('unMute', []);
-      _ytCmd('setVolume', [volLevel]);
-    }
-  }
-  document.getElementById('ico-vol').style.display = isMuted ? 'none' : 'block';
-  document.getElementById('ico-mute').style.display = isMuted ? 'block' : 'none';
-}
-
-// ════════════════════════════════════════════════════════════
-//  KEYBOARD SHORTCUTS
-// ════════════════════════════════════════════════════════════
-document.addEventListener('keydown', function(e) {
-  var tag = document.activeElement ? document.activeElement.tagName : '';
-  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-  switch(e.key) {
-    case ' ': case 'Spacebar': e.preventDefault(); togglePlay(); break;
-    case 'ArrowLeft': e.preventDefault(); prevTrack(); break;
-    case 'ArrowRight': e.preventDefault(); nextTrack(); break;
-    case 'm': case 'M': toggleMute(); break;
-    case 's': case 'S': toggleShuffle(); break;
-    case 'r': case 'R': toggleRepeat(); break;
-    case 'q': case 'Q': switchTab('queue'); break;
-    case 'h': case 'H': switchTab('history'); break;
-    case 'p': case 'P': switchTab('playlist'); break;
-  }
-});
-
-// ════════════════════════════════════════════════════════════
-//  SEARCH
-// ════════════════════════════════════════════════════════════
-function doSearch() {
-  var q = document.getElementById('search-input').value.trim();
-  if (!q) { toast('Masukkan nama lagu atau artis!'); return; }
-  hideSearchDropdown();
-  addSearchHistory(q);
-  var btn = document.getElementById('btn-search');
-  btn.disabled = true; btn.textContent = '...';
-  showSearchingState();
-  if (!API_KEY) {
-    setTimeout(function() { btn.disabled = false; btn.textContent = 'Cari'; showDemoPlaylist(q); }, 600);
-    return;
-  }
-  corsProxyIdx = 0;
-  trySearchWithProxy(q, btn);
-}
-function trySearchWithProxy(q, btn) {
-  var ytUrl = 'https://www.googleapis.com/youtube/v3/search'
-    + '?part=snippet&type=video&videoCategoryId=10&maxResults=20'
-    + '&q=' + encodeURIComponent(q + ' music') + '&key=' + API_KEY;
-  var fetchUrl = corsProxyIdx === 0 ? ytUrl
-    : corsProxyIdx === 1 ? CORS_PROXIES[0] + encodeURIComponent(ytUrl)
-    : corsProxyIdx === 2 ? CORS_PROXIES[1] + encodeURIComponent(ytUrl)
-    : null;
-  if (!fetchUrl) {
-    btn.disabled = false; btn.textContent = 'Cari';
-    toast('API tidak dapat dijangkau. Mode demo aktif.', 'warn');
-    showDemoPlaylist(q); setModeText('Demo mode — jaringan memblokir API'); return;
-  }
-  fetch(fetchUrl)
-    .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(function(raw) {
-      var data = raw.contents ? JSON.parse(raw.contents) : raw;
-      if (data.error) throw new Error(data.error.message || 'API Error');
-      if (!data.items || !data.items.length) { toast('Tidak ada hasil.'); renderEmpty('Tidak ada hasil'); btn.disabled = false; btn.textContent = 'Cari'; return; }
-      tracks = data.items.map(function(it) {
-        return { id: it.id.videoId, title: it.snippet.title, ch: it.snippet.channelTitle, thumb: (it.snippet.thumbnails.default||{}).url||'' };
-      });
-      renderTracks(); btn.disabled = false; btn.textContent = 'Cari';
-      setModeText('Qoovy aktif (' + (corsProxyIdx === 0 ? 'Direct' : 'via proxy') + ')');
-      toast('Ditemukan ' + tracks.length + ' lagu');
-      if (isShuffle) buildShuffleQueue(curIdx);
-    })
-    .catch(function() { corsProxyIdx++; trySearchWithProxy(q, btn); });
-}
-function setModeText(text) { document.getElementById('mode-text').textContent = text; }
-function showDemoPlaylist(q) {
-  tracks = [
-    { id:'dQw4w9WgXcQ', title:'Rick Astley - Never Gonna Give You Up', ch:'Rick Astley', thumb:'https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg' },
-    { id:'kXYiU_JCYtU', title:'Linkin Park - Numb', ch:'Linkin Park', thumb:'https://i.ytimg.com/vi/kXYiU_JCYtU/default.jpg' },
-    { id:'fJ9rUzIMcZQ', title:'Bohemian Rhapsody', ch:'Queen Official', thumb:'https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg' },
-    { id:'1w7OgIMMRc4', title:'Sweet Child O Mine', ch:'Guns N Roses', thumb:'https://i.ytimg.com/vi/1w7OgIMMRc4/default.jpg' },
-    { id:'CdqoNKCCt7A', title:'Someone Like You', ch:'Adele', thumb:'https://i.ytimg.com/vi/CdqoNKCCt7A/default.jpg' },
-    { id:'JGwWNGJdvx8', title:'Shape of You', ch:'Ed Sheeran', thumb:'https://i.ytimg.com/vi/JGwWNGJdvx8/default.jpg' },
-    { id:'OPf0YbXqDm0', title:'Uptown Funk ft Bruno Mars', ch:'Mark Ronson', thumb:'https://i.ytimg.com/vi/OPf0YbXqDm0/default.jpg' },
-    { id:'hLQl3WQQoQ0', title:'Adele - Someone Like You (Official)', ch:'Adele', thumb:'https://i.ytimg.com/vi/hLQl3WQQoQ0/default.jpg' },
-    { id:'YQHsXMglC9A', title:'Adele - Hello', ch:'Adele', thumb:'https://i.ytimg.com/vi/YQHsXMglC9A/default.jpg' },
-    { id:'7wtfhZwyrcc', title:'Post Malone - Circles', ch:'Post Malone', thumb:'https://i.ytimg.com/vi/7wtfhZwyrcc/default.jpg' }
-  ];
-  renderTracks();
-  setModeText('Mode demo — masukkan Code Key untuk pencarian nyata');
-  toast('Mode demo aktif — ' + tracks.length + ' lagu tersedia');
-}
-function showSearchingState() {
-  document.getElementById('track-list').innerHTML =
-    '<div class="empty-wrap"><div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>'
-    + '<div class="empty-title">Mencari...</div><div class="spinner-sm"></div></div>';
-  switchTab('playlist');
-}
-function renderEmpty(msg) {
-  document.getElementById('track-list').innerHTML = '<div class="empty-wrap"><div class="empty-title">' + esc(msg) + '</div></div>';
-  document.getElementById('track-badge').textContent = '0 lagu';
-  document.getElementById('badge-playlist').textContent = '0';
-}
-function renderTracks() {
-  var n = tracks.length;
-  document.getElementById('track-badge').textContent = n + ' lagu';
-  document.getElementById('badge-playlist').textContent = n;
-  var html = tracks.map(function(t, i) {
-    return '<div class="track-item' + (i === curIdx ? ' active' : '') + '" id="ti-' + i + '" onclick="playTrack(' + i + ')">'
-      + '<img class="track-thumb" src="' + esc(t.thumb) + '" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
-      + '<div class="track-info"><div class="track-title">' + esc(t.title) + '</div><div class="track-ch">' + esc(t.ch) + '</div></div>'
-      + '<div class="track-right"><div class="track-actions">'
-      + '<button class="btn-queue-add" onclick="event.stopPropagation();addToQueue(tracks[' + i + '])" title="Tambah ke antrean">'
-      + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-      + '</button></div>'
-      + '<div class="track-idx">' + (i+1) + '</div>'
-      + '<div class="wave-bars"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>'
-      + '</div></div>';
-  }).join('');
-  document.getElementById('track-list').innerHTML = html;
-}
-function scrollToTrack(i) {
-  var el = document.getElementById('ti-' + i);
-  if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-
-// ════════════════════════════════════════════════════════════
-//  SEARCH HISTORY
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  LOAD FROM LOCALSTORAGE
+// ═══════════════════════════════════════════
 function loadFromStorage() {
   try { var sh = localStorage.getItem(LS_SEARCH_HIST); if (sh) searchHistory = JSON.parse(sh); } catch(e) { searchHistory = []; }
   try { var ph = localStorage.getItem(LS_PLAY_HIST); if (ph) playHistory = JSON.parse(ph); } catch(e) { playHistory = []; }
@@ -1757,164 +1311,21 @@ function loadFromStorage() {
 }
 function saveSearchHistory() { try { localStorage.setItem(LS_SEARCH_HIST, JSON.stringify(searchHistory)); } catch(e) {} }
 function savePlayHistory() { try { localStorage.setItem(LS_PLAY_HIST, JSON.stringify(playHistory)); } catch(e) {} }
-function addSearchHistory(q) {
-  searchHistory = searchHistory.filter(function(s) { return s !== q; });
-  searchHistory.unshift(q);
-  if (searchHistory.length > 15) searchHistory = searchHistory.slice(0, 15);
-  saveSearchHistory();
-}
-function deleteSearchHistory(q) {
-  searchHistory = searchHistory.filter(function(s) { return s !== q; });
-  saveSearchHistory(); showSearchDropdown();
-}
-function clearSearchHistory() { searchHistory = []; saveSearchHistory(); hideSearchDropdown(); }
-function onSearchInput() { showSearchDropdown(); }
-function onSearchKeydown(e) {
-  if (e.key === 'Enter') { hideSearchDropdown(); doSearch(); }
-  else if (e.key === 'Escape') { hideSearchDropdown(); }
-}
-function showSearchDropdown() {
-  var input = document.getElementById('search-input');
-  var val = input.value.trim().toLowerCase();
-  var dropdown = document.getElementById('search-history-dropdown');
-  var filtered = val ? searchHistory.filter(function(s) { return s.toLowerCase().includes(val); }) : searchHistory;
-  if (!filtered.length) { hideSearchDropdown(); return; }
-  var html = filtered.map(function(s) {
-    return '<div class="sh-item">'
-      + '<div class="sh-item-text" onclick="selectSearchHistory(\'' + esc(s) + '\')">'
-      + '<svg class="sh-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
-      + esc(s) + '</div>'
-      + '<button class="sh-del" onclick="event.stopPropagation();deleteSearchHistory(\'' + esc(s) + '\')" title="Hapus">x</button>'
-      + '</div>';
-  }).join('');
-  html += '<div class="sh-clear-row" onclick="clearSearchHistory()">Hapus Semua Riwayat</div>';
-  dropdown.innerHTML = html; dropdown.classList.add('show');
-}
-function hideSearchDropdown() { document.getElementById('search-history-dropdown').classList.remove('show'); }
-function selectSearchHistory(q) {
-  document.getElementById('search-input').value = q;
-  hideSearchDropdown(); doSearch();
-}
-document.addEventListener('click', function(e) {
-  var section = document.querySelector('.search-section');
-  if (section && !section.contains(e.target)) hideSearchDropdown();
-});
 
-// ════════════════════════════════════════════════════════════
-//  PLAY HISTORY
-// ════════════════════════════════════════════════════════════
-function addPlayHistory(track) {
-  var entry = { id: track.id, title: track.title, ch: track.ch, thumb: track.thumb, ts: Date.now() };
-  playHistory = playHistory.filter(function(h) { return h.id !== track.id; });
-  playHistory.unshift(entry);
-  if (playHistory.length > 50) playHistory = playHistory.slice(0, 50);
-  savePlayHistory(); renderHistoryList(); updateHistoryBadge();
-}
-function clearPlayHistory() {
-  playHistory = []; savePlayHistory(); renderHistoryList(); updateHistoryBadge();
-  toast('Riwayat dihapus');
-}
-function updateHistoryBadge() {
-  var el = document.getElementById('badge-history');
-  if (el) el.textContent = playHistory.length;
-}
-function renderHistoryList() {
-  var list = document.getElementById('history-list');
-  if (!playHistory.length) {
-    list.innerHTML = '<div class="empty-wrap">'
-      + '<div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>'
-      + '<div class="empty-title">Belum ada riwayat</div>'
-      + '<div class="empty-sub">Lagu yang diputar akan muncul di sini</div>'
-      + '</div>';
-    return;
-  }
-  var html = playHistory.map(function(h, i) {
-    return '<div class="hist-item" onclick="playFromHistory(' + i + ')">'
-      + '<img class="track-thumb" src="' + esc(h.thumb) + '" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
-      + '<div class="track-info"><div class="track-title">' + esc(h.title) + '</div><div class="track-ch">' + esc(h.ch) + '</div></div>'
-      + '<span class="hist-time">' + fmtRelTime(h.ts) + '</span>'
-      + '</div>';
-  }).join('');
-  list.innerHTML = html;
-}
-function playFromHistory(i) {
-  var h = playHistory[i];
-  if (!h) return;
-  var exists = tracks.findIndex(function(t) { return t.id === h.id; });
-  if (exists >= 0) { playTrack(exists); }
-  else {
-    tracks.unshift({ id: h.id, title: h.title, ch: h.ch, thumb: h.thumb });
-    renderTracks(); playTrack(0);
-  }
-  if (window.innerWidth <= 640) setTimeout(closeMobilePlaylist, 200);
-}
-function fmtRelTime(ts) {
-  var diff = Math.floor((Date.now() - ts) / 1000);
-  if (diff < 60) return 'baru saja';
-  if (diff < 3600) return Math.floor(diff/60) + 'm lalu';
-  if (diff < 86400) return Math.floor(diff/3600) + 'j lalu';
-  return Math.floor(diff/86400) + 'h lalu';
-}
-
-// ════════════════════════════════════════════════════════════
-//  QUEUE
-// ════════════════════════════════════════════════════════════
-function addToQueue(track, showToast) {
-  musicQueue.push(track); renderQueueList(); updateQueueBadge();
-  if (showToast !== false) toast('"' + track.title.substring(0,30) + '..." ditambah ke antrean');
-  var pill = document.getElementById('pill-queue');
-  if (pill) { pill.textContent = 'Queue: ' + musicQueue.length; pill.classList.add('show'); }
-}
-function removeFromQueue(i) {
-  musicQueue.splice(i, 1); renderQueueList(); updateQueueBadge();
-  var pill = document.getElementById('pill-queue');
-  if (pill) {
-    if (musicQueue.length > 0) { pill.textContent = 'Queue: ' + musicQueue.length; pill.classList.add('show'); }
-    else pill.classList.remove('show');
-  }
-}
-function clearQueue() {
-  musicQueue = []; renderQueueList(); updateQueueBadge();
-  var pill = document.getElementById('pill-queue');
-  if (pill) pill.classList.remove('show');
-  toast('Antrean dikosongkan');
-}
-function updateQueueBadge() {
-  var el = document.getElementById('badge-queue');
-  if (el) el.textContent = musicQueue.length;
-}
-function renderQueueList() {
-  var list = document.getElementById('queue-list');
-  if (!musicQueue.length) {
-    list.innerHTML = '<div class="empty-wrap">'
-      + '<div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div>'
-      + '<div class="empty-title">Antrean kosong</div>'
-      + '<div class="empty-sub">Tekan + pada lagu untuk menambah ke antrean</div>'
-      + '</div>';
-    return;
-  }
-  var html = musicQueue.map(function(t, i) {
-    return '<div class="queue-item">'
-      + '<span class="queue-order">' + (i+1) + '</span>'
-      + '<img class="track-thumb" src="' + esc(t.thumb) + '" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
-      + '<div class="track-info"><div class="track-title">' + esc(t.title) + '</div><div class="track-ch">' + esc(t.ch) + '</div></div>'
-      + '<button class="btn-queue-remove" onclick="removeFromQueue(' + i + ')">'
-      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
-      + '</button></div>';
-  }).join('');
-  list.innerHTML = html;
-}
-
-// ════════════════════════════════════════════════════════════
-//  SIDEBAR TABS & MOBILE
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════
 function switchTab(tab) {
   activeTab = tab;
   ['playlist','queue','history'].forEach(function(t) {
-    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-    document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('panel-'+t).classList.toggle('active', t===tab);
   });
 }
+
+// ═══════════════════════════════════════════
+//  MOBILE PLAYLIST
+// ═══════════════════════════════════════════
 function toggleMobilePlaylist() {
   mobilePlaylistOpen = !mobilePlaylistOpen;
   var sidebar = document.getElementById('sidebar');
@@ -1931,258 +1342,373 @@ function toggleMobilePlaylist() {
 }
 function closeMobilePlaylist() { if (mobilePlaylistOpen) toggleMobilePlaylist(); }
 
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  SEARCH HISTORY
+// ═══════════════════════════════════════════
+function addSearchHistory(q) {
+  searchHistory = searchHistory.filter(function(s){return s!==q;});
+  searchHistory.unshift(q);
+  if(searchHistory.length>15) searchHistory=searchHistory.slice(0,15);
+  saveSearchHistory();
+}
+function deleteSearchHistory(q) { searchHistory=searchHistory.filter(function(s){return s!==q;}); saveSearchHistory(); showSearchDropdown(); }
+function clearSearchHistory() { searchHistory=[]; saveSearchHistory(); hideSearchDropdown(); }
+function onSearchInput() { showSearchDropdown(); }
+function onSearchKeydown(e) { if(e.key==='Enter'){hideSearchDropdown();doSearch();}else if(e.key==='Escape'){hideSearchDropdown();} }
+function showSearchDropdown() {
+  var input=document.getElementById('search-input');
+  var val=input.value.trim().toLowerCase();
+  var dropdown=document.getElementById('search-history-dropdown');
+  var filtered=val?searchHistory.filter(function(s){return s.toLowerCase().includes(val);}):searchHistory;
+  if(!filtered.length){hideSearchDropdown();return;}
+  var html=filtered.map(function(s){
+    return '<div class="sh-item">'
+      +'<div class="sh-item-text" onclick="selectSearchHistory(\''+esc(s)+'\')"><svg class="sh-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'+esc(s)+'</div>'
+      +'<button class="sh-del" onclick="event.stopPropagation();deleteSearchHistory(\''+esc(s)+'\')" title="Hapus">x</button>'
+      +'</div>';
+  }).join('');
+  html+='<div class="sh-clear-row" onclick="clearSearchHistory()">Hapus Semua Riwayat</div>';
+  dropdown.innerHTML=html; dropdown.classList.add('show');
+}
+function hideSearchDropdown() { document.getElementById('search-history-dropdown').classList.remove('show'); }
+function selectSearchHistory(q) { document.getElementById('search-input').value=q; hideSearchDropdown(); doSearch(); }
+document.addEventListener('click',function(e){var sec=document.querySelector('.search-section');if(sec&&!sec.contains(e.target))hideSearchDropdown();});
+
+// ═══════════════════════════════════════════
+//  PLAY HISTORY
+// ═══════════════════════════════════════════
+function addPlayHistory(track) {
+  var entry={id:track.id,title:track.title,ch:track.ch,thumb:track.thumb,ts:Date.now()};
+  playHistory=playHistory.filter(function(h){return h.id!==track.id;});
+  playHistory.unshift(entry);
+  if(playHistory.length>50) playHistory=playHistory.slice(0,50);
+  savePlayHistory(); renderHistoryList(); updateHistoryBadge();
+}
+function clearPlayHistory() { playHistory=[]; savePlayHistory(); renderHistoryList(); updateHistoryBadge(); toast('Riwayat dihapus'); }
+function updateHistoryBadge() { var el=document.getElementById('badge-history'); if(el) el.textContent=playHistory.length; }
+function renderHistoryList() {
+  var list=document.getElementById('history-list');
+  if(!playHistory.length){list.innerHTML='<div class="empty-wrap"><div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="empty-title">Belum ada riwayat</div><div class="empty-sub">Lagu yang diputar akan muncul di sini</div></div>';return;}
+  var html=playHistory.map(function(h,i){
+    return '<div class="hist-item" onclick="playFromHistory('+i+')">'
+      +'<img class="track-thumb" src="'+esc(h.thumb)+'" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
+      +'<div class="track-info"><div class="track-title">'+esc(h.title)+'</div><div class="track-ch">'+esc(h.ch)+'</div></div>'
+      +'<span class="hist-time">'+fmtRelTime(h.ts)+'</span>'
+      +'</div>';
+  }).join('');
+  list.innerHTML=html;
+}
+function playFromHistory(i) {
+  var h=playHistory[i]; if(!h) return;
+  var exists=tracks.findIndex(function(t){return t.id===h.id;});
+  if(exists>=0){playTrack(exists);}else{tracks.unshift({id:h.id,title:h.title,ch:h.ch,thumb:h.thumb});renderTracks();playTrack(0);}
+  if(window.innerWidth<=640) setTimeout(closeMobilePlaylist,200);
+}
+function fmtRelTime(ts) {
+  var diff=Math.floor((Date.now()-ts)/1000);
+  if(diff<60) return 'baru saja';
+  if(diff<3600) return Math.floor(diff/60)+'m lalu';
+  if(diff<86400) return Math.floor(diff/3600)+'j lalu';
+  return Math.floor(diff/86400)+'h lalu';
+}
+
+// ═══════════════════════════════════════════
+//  MUSIC QUEUE
+// ═══════════════════════════════════════════
+function addToQueue(track,showToast) {
+  musicQueue.push(track); renderQueueList(); updateQueueBadge();
+  if(showToast!==false) toast('"'+track.title.substring(0,30)+'..." ditambah ke antrean');
+  var pill=document.getElementById('pill-queue');
+  if(pill){pill.textContent='Queue: '+musicQueue.length;pill.classList.add('show');}
+}
+function removeFromQueue(i) {
+  musicQueue.splice(i,1); renderQueueList(); updateQueueBadge();
+  var pill=document.getElementById('pill-queue');
+  if(pill){if(musicQueue.length>0){pill.textContent='Queue: '+musicQueue.length;pill.classList.add('show');}else{pill.classList.remove('show');}}
+}
+function clearQueue() { musicQueue=[]; renderQueueList(); updateQueueBadge(); var pill=document.getElementById('pill-queue'); if(pill) pill.classList.remove('show'); toast('Antrean dikosongkan'); }
+function updateQueueBadge() { var el=document.getElementById('badge-queue'); if(el) el.textContent=musicQueue.length; }
+function renderQueueList() {
+  var list=document.getElementById('queue-list');
+  if(!musicQueue.length){list.innerHTML='<div class="empty-wrap"><div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg></div><div class="empty-title">Antrean kosong</div><div class="empty-sub">Tekan + pada lagu untuk menambah ke antrean</div></div>';return;}
+  var html=musicQueue.map(function(t,i){
+    return '<div class="queue-item"><span class="queue-order">'+(i+1)+'</span>'
+      +'<img class="track-thumb" src="'+esc(t.thumb)+'" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
+      +'<div class="track-info"><div class="track-title">'+esc(t.title)+'</div><div class="track-ch">'+esc(t.ch)+'</div></div>'
+      +'<button class="btn-queue-remove" onclick="removeFromQueue('+i+')" title="Hapus dari antrean"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+  }).join('');
+  list.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+//  SHUFFLE
+// ═══════════════════════════════════════════
+function buildShuffleQueue(currentIdx) {
+  var indices=[];
+  for(var i=0;i<tracks.length;i++){if(i!==currentIdx) indices.push(i);}
+  for(var j=indices.length-1;j>0;j--){var k=Math.floor(Math.random()*(j+1));var tmp=indices[j];indices[j]=indices[k];indices[k]=tmp;}
+  if(currentIdx>=0) indices.unshift(currentIdx);
+  shuffleQueue=indices; shufflePos=0;
+}
+function getNextShuffleIdx(){if(!shuffleQueue.length) buildShuffleQueue(curIdx);shufflePos++;if(shufflePos>=shuffleQueue.length){buildShuffleQueue(-1);shufflePos=0;}return shuffleQueue[shufflePos]!==undefined?shuffleQueue[shufflePos]:0;}
+function getPrevShuffleIdx(){if(shufflePos>0) shufflePos--;return shuffleQueue[shufflePos]!==undefined?shuffleQueue[shufflePos]:0;}
+
+// ═══════════════════════════════════════════
+//  YOUTUBE IFRAME
+// ═══════════════════════════════════════════
+function buildIframeSrc(videoId,autoplay){
+  var origin=window.location.origin||'http://localhost';
+  var auto=autoplay?1:0;
+  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white';
+}
+function ytCmd(func,args){var iframe=document.getElementById('yt-iframe');if(!iframe||!iframe.contentWindow) return;try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}catch(e){}}
+window.addEventListener('message',function(e){
+  if(!e.origin.includes('youtube')) return;
+  try{
+    var data=typeof e.data==='string'?JSON.parse(e.data):e.data;
+    if(data.event==='onReady'){ytAPIReady=true;ytCmd('setVolume',[isMuted?0:volLevel]);hideLdr();}
+    if(data.event==='onStateChange') handleStateChange(data.info);
+    if(data.event==='infoDelivery'&&data.info){
+      if(data.info.currentTime!==undefined&&data.info.duration!==undefined){simCur=data.info.currentTime;simDur=data.info.duration;updateProgressUI();}
+      if(adBlockEnabled&&data.info.videoData){var playingId=data.info.videoData.video_id;if(curIdx>=0&&tracks[curIdx]&&playingId&&playingId!==tracks[curIdx].id){if(!isAdShowing) triggerAdOverlay();}else{if(isAdShowing) hideAdOverlay();}}
+    }
+  }catch(e2){}
+});
+function handleStateChange(state){
+  if(state===1){setPlayState(true);hideLdr();startProgTimer();if(isAdShowing) hideAdOverlay();setMediaSessionPlayback(true);requestWakeLock();}
+  else if(state===2){setPlayState(false);stopProgTimer();setMediaSessionPlayback(false);releaseWakeLock();}
+  else if(state===0){setPlayState(false);stopProgTimer();handleTrackEnd();}
+  else if(state===3){showLdr();}
+  else if(state===-1||state===5){hideLdr();}
+}
+function handleTrackEnd(){
+  if(repeatMode===2){reloadCurrentTrack();return;}
+  if(musicQueue.length>0){
+    var nextFromQ=musicQueue.shift();renderQueueList();updateQueueBadge();
+    var pill=document.getElementById('pill-queue');
+    if(pill){if(musicQueue.length>0){pill.textContent='Queue: '+musicQueue.length;pill.classList.add('show');}else{pill.classList.remove('show');}}
+    var foundIdx=tracks.findIndex(function(t){return t.id===nextFromQ.id;});
+    if(foundIdx!==-1){playTrack(foundIdx);}else{var insertAt=(curIdx>=0?curIdx+1:tracks.length);tracks.splice(insertAt,0,nextFromQ);renderTracks();playTrack(insertAt);}
+    toast('▶ Memutar dari antrean');return;
+  }
+  nextTrack();
+}
+function startInfoRequests(){stopInfoRequests();infoRequestTimer=setInterval(function(){ytCmd('getVideoData',[]);var iframe=document.getElementById('yt-iframe');if(iframe&&iframe.contentWindow){try{iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*');}catch(e){}}},1500);}
+function stopInfoRequests(){if(infoRequestTimer){clearInterval(infoRequestTimer);infoRequestTimer=null;}}
+
+// ═══════════════════════════════════════════
+//  PROGRESS
+// ═══════════════════════════════════════════
+var progLastUpdate=0;
+function startProgTimer(){stopProgTimer();progTimer=setInterval(function(){if(!isPlaying) return;simCur+=0.9;if(simDur>0&&simCur>=simDur-0.5){simCur=simDur;updateProgressUI();stopProgTimer();setPlayState(false);handleTrackEnd();return;}updateProgressUI();progLastUpdate++;if(progLastUpdate%5===0){var iframe=document.getElementById('yt-iframe');if(iframe&&iframe.contentWindow){try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:'getCurrentTime',args:[]}),'*');}catch(e){}}}},900);}
+function stopProgTimer(){if(progTimer){clearInterval(progTimer);progTimer=null;}}
+function updateProgressUI(){if(simDur>0){var pct=Math.min(100,(simCur/simDur)*100);document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('t-cur').textContent=fmt(simCur);document.getElementById('t-dur').textContent=fmt(simDur);}if('mediaSession' in navigator&&simDur>0){try{navigator.mediaSession.setPositionState({duration:simDur,playbackRate:1,position:simCur});}catch(e){}}}
+function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(('0'+(s%60)).slice(-2));}
+function seekTo(e){var rect=document.getElementById('prog-track').getBoundingClientRect();var clientX=e.touches?e.touches[0].clientX:e.clientX;var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));var seekSec=pct*(simDur||300);simCur=seekSec;ytCmd('seekTo',[seekSec,true]);updateProgressUI();}
+
+// ═══════════════════════════════════════════
+//  AD BLOCKER
+// ═══════════════════════════════════════════
+function triggerAdOverlay(){if(!adBlockEnabled) return;isAdShowing=true;document.getElementById('ad-overlay').classList.add('show');adCountVal=5;document.getElementById('ad-countdown').textContent=adCountVal;clearInterval(adCountdownTimer);adCountdownTimer=setInterval(function(){adCountVal--;document.getElementById('ad-countdown').textContent=adCountVal;if(adCountVal<=0){clearInterval(adCountdownTimer);skipAdNow();}},1000);}
+function skipAdNow(){clearInterval(adCountdownTimer);ytCmd('playVideo',[]);ytCmd('seekTo',[9999,true]);setTimeout(function(){if(isAdShowing&&curIdx>=0) reloadCurrentTrack();},800);}
+function hideAdOverlay(){isAdShowing=false;clearInterval(adCountdownTimer);document.getElementById('ad-overlay').classList.remove('show');}
+function toggleAdBlock(){
+  adBlockEnabled=!adBlockEnabled;
+  var badge=document.getElementById('adb-badge');var lbl=document.getElementById('adb-label');var pill=document.getElementById('pill-adblock');
+  if(adBlockEnabled){badge.classList.remove('off');lbl.textContent='AD-FREE ON';pill.classList.remove('off');pill.textContent='AdBlock ON';toast('AdBlock aktif');}
+  else{badge.classList.add('off');lbl.textContent='AD-FREE OFF';pill.classList.add('off');pill.textContent='AdBlock OFF';if(isAdShowing) hideAdOverlay();toast('AdBlock dimatikan');}
+}
+function startAdWatch(videoId){stopAdWatch();if(!adBlockEnabled) return;var checks=0;adWatchTimer=setInterval(function(){checks++;if(checks===2&&adBlockEnabled&&!isPlaying){ytCmd('cancelPlayback',[]);setTimeout(function(){if(curIdx>=0&&!isPlaying) reloadCurrentTrack();},500);}if(checks>6) stopAdWatch();},2000);}
+function stopAdWatch(){if(adWatchTimer){clearInterval(adWatchTimer);adWatchTimer=null;}}
+
+// ═══════════════════════════════════════════
+//  PLAYBACK
+// ═══════════════════════════════════════════
+function playTrack(idx){
+  if(idx<0||idx>=tracks.length) return;
+  curIdx=idx;
+  var t=tracks[idx];
+  simCur=0;simDur=0;ytAPIReady=false;isPlaying=false;
+  stopProgTimer();hideAdOverlay();
+  document.getElementById('idle-view').style.display='none';
+  document.getElementById('player-view').style.display='block';
+  document.getElementById('idle-disc').classList.add('spin');
+  showLdr();
+  var iframe=document.getElementById('yt-iframe');
+  iframe.src=buildIframeSrc(t.id,true);
+  document.getElementById('np-title').textContent=t.title;
+  document.getElementById('np-ch').textContent=t.ch;
+  document.getElementById('prog-fill').style.width='0%';
+  document.getElementById('t-cur').textContent='0:00';
+  document.getElementById('t-dur').textContent='0:00';
+  addPlayHistory(t);
+  renderTracks();
+  scrollToTrack(idx);
+  startInfoRequests();
+  startAdWatch(t.id);
+  updateMediaSession(t);
+  setTimeout(function(){if(curIdx===idx) hideLdr();},6000);
+  setTimeout(function(){if(curIdx===idx&&!isPlaying){setPlayState(true);if(simDur===0) simDur=240;startProgTimer();}},4000);
+}
+function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
+function togglePlay(){
+  if(curIdx<0){if(tracks.length>0) playTrack(0);return;}
+  if(isPlaying){ytCmd('pauseVideo',[]);setPlayState(false);stopProgTimer();}
+  else{ytCmd('playVideo',[]);setPlayState(true);startProgTimer();}
+}
+function prevTrack(){if(!tracks.length) return;var idx;if(isShuffle){idx=getPrevShuffleIdx();}else{idx=(curIdx-1+tracks.length)%tracks.length;}playTrack(idx);}
+function nextTrack(){
+  if(!tracks.length) return;
+  if(musicQueue.length>0){
+    var nextFromQ=musicQueue.shift();renderQueueList();updateQueueBadge();
+    var pill=document.getElementById('pill-queue');if(pill){if(musicQueue.length>0){pill.textContent='Queue: '+musicQueue.length;pill.classList.add('show');}else{pill.classList.remove('show');}}
+    var fIdx=tracks.findIndex(function(t){return t.id===nextFromQ.id;});
+    if(fIdx!==-1){playTrack(fIdx);}else{var ins=(curIdx>=0?curIdx+1:tracks.length);tracks.splice(ins,0,nextFromQ);renderTracks();playTrack(ins);}
+    return;
+  }
+  var idx;
+  if(isShuffle){idx=getNextShuffleIdx();}
+  else{if(repeatMode===1){idx=(curIdx+1)%tracks.length;}else{idx=curIdx+1;if(idx>=tracks.length){toast('Playlist selesai');setPlayState(false);stopProgTimer();return;}}}
+  playTrack(idx);
+}
+function setPlayState(state){
+  isPlaying=state;
+  document.getElementById('ico-play').style.display=state?'none':'block';
+  document.getElementById('ico-pause').style.display=state?'block':'none';
+  var disc=document.getElementById('idle-disc');
+  if(state) disc.classList.add('spin');else disc.classList.remove('spin');
+  setMediaSessionPlayback(state);
+}
+function toggleShuffle(){isShuffle=!isShuffle;document.getElementById('btn-shuf').classList.toggle('lit',isShuffle);if(isShuffle){buildShuffleQueue(curIdx);toast('Acak: ON — urutan baru diacak');}else{shuffleQueue=[];shufflePos=0;toast('Acak: OFF');}}
+function toggleRepeat(){repeatMode=(repeatMode+1)%3;var btn=document.getElementById('btn-rep');btn.classList.remove('lit','repeat-one','lit-yellow');if(repeatMode===0){toast('Ulangi: OFF');}else if(repeatMode===1){btn.classList.add('lit');toast('Ulangi: Semua');}else if(repeatMode===2){btn.classList.add('lit','repeat-one');toast('Ulangi: Satu lagu');}}
+function onVolSlider(v){volLevel=Number(v);if(!isMuted) ytCmd('setVolume',[volLevel]);}
+function toggleMute(){isMuted=!isMuted;if(isMuted) ytCmd('mute',[]);else{ytCmd('unMute',[]);ytCmd('setVolume',[volLevel]);}document.getElementById('ico-vol').style.display=isMuted?'none':'block';document.getElementById('ico-mute').style.display=isMuted?'block':'none';}
+
+// ═══════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════
+document.addEventListener('keydown',function(e){
+  var tag=document.activeElement?document.activeElement.tagName:'';
+  if(tag==='INPUT'||tag==='TEXTAREA') return;
+  switch(e.key){
+    case ' ':case 'Spacebar':e.preventDefault();togglePlay();break;
+    case 'ArrowLeft':e.preventDefault();prevTrack();break;
+    case 'ArrowRight':e.preventDefault();nextTrack();break;
+    case 'm':case 'M':toggleMute();break;
+    case 's':case 'S':toggleShuffle();break;
+    case 'r':case 'R':toggleRepeat();break;
+    case 'q':case 'Q':switchTab('queue');break;
+    case 'h':case 'H':switchTab('history');break;
+    case 'p':case 'P':switchTab('playlist');break;
+  }
+});
+
+// ═══════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════
+function doSearch(){
+  var q=document.getElementById('search-input').value.trim();
+  if(!q){toast('Masukkan nama lagu atau artis!');return;}
+  hideSearchDropdown(); addSearchHistory(q);
+  var btn=document.getElementById('btn-search');
+  btn.disabled=true;btn.textContent='...';
+  showSearchingState();
+  if(!API_KEY){setTimeout(function(){btn.disabled=false;btn.textContent='Cari';showDemoPlaylist(q);},600);return;}
+  corsProxyIdx=0; trySearchWithProxy(q,btn);
+}
+function trySearchWithProxy(q,btn){
+  var ytUrl='https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=20&q='+encodeURIComponent(q+' music')+'&key='+API_KEY;
+  var fetchUrl=corsProxyIdx===0?ytUrl:corsProxyIdx===1?CORS_PROXIES[0]+encodeURIComponent(ytUrl):corsProxyIdx===2?CORS_PROXIES[1]+encodeURIComponent(ytUrl):null;
+  if(!fetchUrl){btn.disabled=false;btn.textContent='Cari';toast('API tidak dapat dijangkau. Mode demo aktif.');showDemoPlaylist(q);setModeText('Demo mode — jaringan memblokir API');return;}
+  fetch(fetchUrl).then(function(r){if(!r.ok) throw new Error('HTTP '+r.status);return r.json();}).then(function(raw){
+    var data=raw.contents?JSON.parse(raw.contents):raw;
+    if(data.error) throw new Error(data.error.message||'API Error');
+    if(!data.items||!data.items.length){toast('Tidak ada hasil.');renderEmpty('Tidak ada hasil');btn.disabled=false;btn.textContent='Cari';return;}
+    tracks=data.items.map(function(it){return{id:it.id.videoId,title:it.snippet.title,ch:it.snippet.channelTitle,thumb:(it.snippet.thumbnails.default||{}).url||''};});
+    renderTracks();btn.disabled=false;btn.textContent='Cari';
+    setModeText('Qoovy ('+(corsProxyIdx===0?'Aktif':'via proxy')+')');
+    toast('Ditemukan '+tracks.length+' lagu');
+    if(isShuffle) buildShuffleQueue(curIdx);
+  }).catch(function(){corsProxyIdx++;trySearchWithProxy(q,btn);});
+}
+function setModeText(text){document.getElementById('mode-text').textContent=text;}
+function showDemoPlaylist(q){
+  tracks=[
+    {id:'dQw4w9WgXcQ',title:'Rick Astley - Never Gonna Give You Up',ch:'Rick Astley',thumb:'https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg'},
+    {id:'kXYiU_JCYtU',title:'Linkin Park - Numb',ch:'Linkin Park',thumb:'https://i.ytimg.com/vi/kXYiU_JCYtU/default.jpg'},
+    {id:'fJ9rUzIMcZQ',title:'Bohemian Rhapsody',ch:'Queen Official',thumb:'https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg'},
+    {id:'1w7OgIMMRc4',title:'Sweet Child O Mine',ch:'Guns N Roses',thumb:'https://i.ytimg.com/vi/1w7OgIMMRc4/default.jpg'},
+    {id:'CdqoNKCCt7A',title:'Someone Like You',ch:'Adele',thumb:'https://i.ytimg.com/vi/CdqoNKCCt7A/default.jpg'},
+    {id:'JGwWNGJdvx8',title:'Shape of You',ch:'Ed Sheeran',thumb:'https://i.ytimg.com/vi/JGwWNGJdvx8/default.jpg'},
+    {id:'OPf0YbXqDm0',title:'Uptown Funk ft Bruno Mars',ch:'Mark Ronson',thumb:'https://i.ytimg.com/vi/OPf0YbXqDm0/default.jpg'},
+    {id:'hLQl3WQQoQ0',title:'Adele - Someone Like You (Official)',ch:'Adele',thumb:'https://i.ytimg.com/vi/hLQl3WQQoQ0/default.jpg'},
+    {id:'YQHsXMglC9A',title:'Adele - Hello',ch:'Adele',thumb:'https://i.ytimg.com/vi/YQHsXMglC9A/default.jpg'},
+    {id:'7wtfhZwyrcc',title:'Post Malone - Circles',ch:'Post Malone',thumb:'https://i.ytimg.com/vi/7wtfhZwyrcc/default.jpg'}
+  ];
+  renderTracks(); setModeText('Mode demo — masukkan Code Key'); toast('Mode demo aktif — '+tracks.length+' lagu tersedia');
+}
+function showSearchingState(){document.getElementById('track-list').innerHTML='<div class="empty-wrap"><div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div><div class="empty-title">Mencari...</div><div class="spinner-sm"></div></div>';switchTab('playlist');}
+function renderEmpty(msg){document.getElementById('track-list').innerHTML='<div class="empty-wrap"><div class="empty-title">'+esc(msg)+'</div></div>';document.getElementById('track-badge').textContent='0 lagu';document.getElementById('badge-playlist').textContent='0';}
+function renderTracks(){
+  var n=tracks.length;
+  document.getElementById('track-badge').textContent=n+' lagu';
+  document.getElementById('badge-playlist').textContent=n;
+  var html=tracks.map(function(t,i){
+    return '<div class="track-item'+(i===curIdx?' active':'')+'" id="ti-'+i+'" onclick="playTrack('+i+')">'
+      +'<img class="track-thumb" src="'+esc(t.thumb)+'" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
+      +'<div class="track-info"><div class="track-title">'+esc(t.title)+'</div><div class="track-ch">'+esc(t.ch)+'</div></div>'
+      +'<div class="track-right"><div class="track-actions"><button class="btn-queue-add" onclick="event.stopPropagation();addToQueue(tracks['+i+'])" title="Tambah ke antrean"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button></div>'
+      +'<div class="track-idx">'+(i+1)+'</div>'
+      +'<div class="wave-bars"><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div></div>'
+      +'</div></div>';
+  }).join('');
+  document.getElementById('track-list').innerHTML=html;
+}
+function scrollToTrack(i){var el=document.getElementById('ti-'+i);if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'});}
+
+// ═══════════════════════════════════════════
 //  UI HELPERS
-// ════════════════════════════════════════════════════════════
-function showLdr() { document.getElementById('vid-loading').classList.add('show'); }
-function hideLdr() { document.getElementById('vid-loading').classList.remove('show'); }
-var toastTmr = null;
-function toast(msg, type) {
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.style.borderLeftColor = (type === 'err') ? 'var(--red)' : (type === 'warn') ? 'var(--yellow)' : 'var(--accent)';
-  el.classList.add('show');
-  if (toastTmr) clearTimeout(toastTmr);
-  toastTmr = setTimeout(function() { el.classList.remove('show'); }, 3200);
-}
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
+// ═══════════════════════════════════════════
+function showLdr(){document.getElementById('vid-loading').classList.add('show');}
+function hideLdr(){document.getElementById('vid-loading').classList.remove('show');}
+var toastTmr=null;
+function toast(msg,type){var el=document.getElementById('toast');el.textContent=msg;el.style.borderLeftColor=(type==='err')?'var(--red)':(type==='warn')?'var(--yellow)':'var(--accent)';el.classList.add('show');if(toastTmr) clearTimeout(toastTmr);toastTmr=setTimeout(function(){el.classList.remove('show');},3200);}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  API KEY MODAL
-// ════════════════════════════════════════════════════════════
-var firstOpen = true;
-function openModal(first) {
-  firstOpen = !!first;
-  document.getElementById('btn-modal-cancel').style.display = first ? 'none' : 'block';
-  document.getElementById('api-key-input').value = API_KEY || '';
-  document.getElementById('modal-backdrop').classList.add('show');
-  setTimeout(function() { document.getElementById('api-key-input').focus(); }, 200);
-}
-function closeModal() { document.getElementById('modal-backdrop').classList.remove('show'); }
-function saveApiKey() {
-  var val = document.getElementById('api-key-input').value.trim();
-  API_KEY = val; updateApiStatus(); closeModal(); corsProxyIdx = 0;
-  if (val) { toast('Code Key tersimpan!'); setModeText('Qoovy Key aktif'); }
-  else { toast('Mode demo aktif.'); setModeText('Mode demo — masukkan Code Key'); }
-}
-function updateApiStatus() {
-  var dot = document.getElementById('status-dot');
-  var lbl = document.getElementById('api-btn-label');
-  if (API_KEY) { dot.classList.add('active'); lbl.textContent = 'Key: ***' + API_KEY.slice(-4); }
-  else { dot.classList.remove('active'); lbl.textContent = 'SET API KEY'; }
-}
-function toggleKeyVis() {
-  var inp = document.getElementById('api-key-input');
-  var isPass = inp.type === 'password';
-  inp.type = isPass ? 'text' : 'password';
-  document.getElementById('eye-open').style.display = isPass ? 'none' : 'block';
-  document.getElementById('eye-closed').style.display = isPass ? 'block' : 'none';
-}
-document.getElementById('modal-backdrop').addEventListener('click', function(e) {
-  if (e.target === this && !firstOpen) closeModal();
-});
-document.getElementById('api-key-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') saveApiKey();
-});
+// ═══════════════════════════════════════════
+var firstOpen=true;
+function openModal(first){firstOpen=!!first;document.getElementById('btn-modal-cancel').style.display=first?'none':'block';document.getElementById('api-key-input').value=API_KEY||'';document.getElementById('modal-backdrop').classList.add('show');setTimeout(function(){document.getElementById('api-key-input').focus();},200);}
+function closeModal(){document.getElementById('modal-backdrop').classList.remove('show');}
+function saveApiKey(){var val=document.getElementById('api-key-input').value.trim();API_KEY=val;updateApiStatus();closeModal();corsProxyIdx=0;if(val){toast('Code Key tersimpan!');setModeText('Qoovy Key aktif');}else{toast('Mode demo aktif.');setModeText('Mode demo — masukkan Code Key untuk pencarian nyata');}}
+function updateApiStatus(){var dot=document.getElementById('status-dot');var lbl=document.getElementById('api-btn-label');if(API_KEY){dot.classList.add('active');lbl.textContent='Key: ***'+API_KEY.slice(-4);}else{dot.classList.remove('active');lbl.textContent='SET API KEY';}}
+function toggleKeyVis(){var inp=document.getElementById('api-key-input');var isPass=inp.type==='password';inp.type=isPass?'text':'password';document.getElementById('eye-open').style.display=isPass?'none':'block';document.getElementById('eye-closed').style.display=isPass?'block':'none';}
+document.getElementById('modal-backdrop').addEventListener('click',function(e){if(e.target===this&&!firstOpen) closeModal();});
+document.getElementById('api-key-input').addEventListener('keydown',function(e){if(e.key==='Enter') saveApiKey();});
 
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  TOUCH: progress bar
-// ════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', function() {
-  var pt = document.getElementById('prog-track');
-  if (pt) {
-    pt.addEventListener('touchstart', function(e) { e.preventDefault(); seekTo(e); }, { passive:false });
-    pt.addEventListener('touchmove', function(e) { e.preventDefault(); seekTo(e); }, { passive:false });
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',function(){
+  var pt=document.getElementById('prog-track');
+  if(pt){
+    pt.addEventListener('touchstart',function(e){e.preventDefault();seekTo(e);},{passive:false});
+    pt.addEventListener('touchmove',function(e){e.preventDefault();seekTo(e);},{passive:false});
   }
-  document.getElementById('track-list').addEventListener('click', function() {
-    if (window.innerWidth <= 640 && mobilePlaylistOpen) setTimeout(closeMobilePlaylist, 200);
-  });
+  document.getElementById('track-list').addEventListener('click',function(){if(window.innerWidth<=640&&mobilePlaylistOpen) setTimeout(closeMobilePlaylist,200);});
+  updateOnlineStatus();
 });
 
-// ════════════════════════════════════════════════════════════
-//  PWA — MANIFEST
-// ════════════════════════════════════════════════════════════
-(function injectManifest() {
-  var icon512 = "data:image/svg+xml," + encodeURIComponent([
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">',
-    '<rect width="512" height="512" rx="115" fill="#080810"/>',
-    '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">',
-    '<stop offset="0%" stop-color="#a78bfa"/>',
-    '<stop offset="100%" stop-color="#ec64a2"/>',
-    '</linearGradient></defs>',
-    '<circle cx="256" cy="256" r="170" fill="none" stroke="url(#g)" stroke-width="10"/>',
-    '<circle cx="256" cy="256" r="110" fill="none" stroke="url(#g)" stroke-width="6" opacity="0.4"/>',
-    '<circle cx="256" cy="256" r="38" fill="url(#g)"/>',
-    '<circle cx="256" cy="256" r="18" fill="#080810"/>',
-    '</svg>'
-  ].join(''));
-  var icon192 = "data:image/svg+xml," + encodeURIComponent([
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">',
-    '<rect width="192" height="192" rx="42" fill="#080810"/>',
-    '<defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">',
-    '<stop offset="0%" stop-color="#a78bfa"/>',
-    '<stop offset="100%" stop-color="#ec64a2"/>',
-    '</linearGradient></defs>',
-    '<circle cx="96" cy="96" r="64" fill="none" stroke="url(#g)" stroke-width="6"/>',
-    '<circle cx="96" cy="96" r="16" fill="url(#g)"/>',
-    '<circle cx="96" cy="96" r="8" fill="#080810"/>',
-    '</svg>'
-  ].join(''));
-  var manifest = {
-    name: 'Qoovy Music Streaming', short_name: 'Qoovy',
-    description: 'Putar musik favoritmu tanpa iklan — by Qabil',
-    start_url: './', scope: './',
-    display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
-    display: 'standalone', background_color: '#080810', theme_color: '#080810',
-    lang: 'id', dir: 'ltr', orientation: 'any', categories: ['music', 'entertainment'],
-    icons: [
-      { src: icon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
-      { src: icon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'maskable' },
-      { src: icon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
-      { src: icon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
-    ]
-  };
-  try {
-    var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-    var link = document.createElement('link');
-    link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
-    document.head.appendChild(link);
-  } catch(e) {}
-})();
-
-// ════════════════════════════════════════════════════════════
-//  PWA — SERVICE WORKER
-// ════════════════════════════════════════════════════════════
-(function registerServiceWorker() {
-  if (!('serviceWorker' in navigator)) return;
-  var swCode = [
-    "var CACHE_NAME = 'qoovy-v7';",
-    "var PRECACHE = [self.registration.scope];",
-    "self.addEventListener('install', function(e) { e.waitUntil(caches.open(CACHE_NAME).then(function(c) { return c.addAll(PRECACHE); }).then(function() { return self.skipWaiting(); }).catch(function() { return self.skipWaiting(); })); });",
-    "self.addEventListener('activate', function(e) { e.waitUntil(caches.keys().then(function(keys) { return Promise.all(keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); })); }).then(function() { return self.clients.claim(); })); });",
-    "self.addEventListener('fetch', function(e) { var url = e.request.url; if (e.request.method !== 'GET') return; if (url.startsWith('chrome-extension://') || url.startsWith('blob:')) return; if (url.includes('youtube') || url.includes('googleapis') || url.includes('ytimg') || url.includes('corsproxy') || url.includes('allorigins')) return; e.respondWith(fetch(e.request).then(function(r) { if (r && r.status === 200 && r.type !== 'opaque') { var clone = r.clone(); caches.open(CACHE_NAME).then(function(c) { try { c.put(e.request, clone); } catch(ex) {} }); } return r; }).catch(function() { return caches.match(e.request).then(function(cached) { if (cached) return cached; if (e.request.mode === 'navigate') return caches.match(self.registration.scope); }); })); });",
-    "self.addEventListener('message', function(e) { if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting(); });"
-  ].join('\n');
-  try {
-    var blob = new Blob([swCode], { type: 'application/javascript' });
-    var swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl, { scope: './' })
-      .then(function(reg) {
-        setInterval(function() { reg.update(); }, 30 * 60 * 1000);
-        reg.addEventListener('updatefound', function() {
-          var nw = reg.installing;
-          if (!nw) return;
-          nw.addEventListener('statechange', function() {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner(nw);
-          });
-        });
-      }).catch(function() {});
-    navigator.serviceWorker.addEventListener('controllerchange', function() {
-      if (pwaReloading) window.location.reload();
-    });
-  } catch(e) {}
-})();
-
-// ════════════════════════════════════════════════════════════
-//  PWA — ONLINE/OFFLINE
-// ════════════════════════════════════════════════════════════
-var offlineBar = document.getElementById('offline-bar');
-function updateOnlineStatus() {
-  if (navigator.onLine) offlineBar.classList.remove('show');
-  else { offlineBar.classList.add('show'); toast('Koneksi terputus', 'warn'); }
-}
-window.addEventListener('online', function() { updateOnlineStatus(); toast('Koneksi kembali!'); });
-window.addEventListener('offline', updateOnlineStatus);
-if (!navigator.onLine) setTimeout(function() { offlineBar.classList.add('show'); }, 1200);
-
-// ════════════════════════════════════════════════════════════
-//  PWA — INSTALL PROMPT
-// ════════════════════════════════════════════════════════════
-var deferredInstallPrompt = null;
-var installBanner = document.getElementById('install-banner');
-var installBannerTimer = null;
-window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault(); deferredInstallPrompt = e;
-  var dismissed = localStorage.getItem('qoovy_pwa_dismissed');
-  var installed = localStorage.getItem('qoovy_pwa_installed');
-  if (!dismissed && !installed) {
-    var delay = window.innerWidth > 640 ? 4000 : 8000;
-    installBannerTimer = setTimeout(showInstallBanner, delay);
-  }
-});
-function showInstallBanner() { if (installBanner) installBanner.classList.add('show'); }
-function hideInstallBanner() {
-  if (installBanner) installBanner.classList.remove('show');
-  if (installBannerTimer) clearTimeout(installBannerTimer);
-}
-document.getElementById('btn-install-pwa').addEventListener('click', function() {
-  hideInstallBanner();
-  if (!deferredInstallPrompt) { toast('Gunakan menu browser (⋮) › Pasang Qoovy', 'warn'); return; }
-  deferredInstallPrompt.prompt();
-  deferredInstallPrompt.userChoice.then(function(r) {
-    if (r.outcome === 'accepted') { toast('Qoovy berhasil dipasang!'); localStorage.setItem('qoovy_pwa_installed', '1'); }
-    else toast('Instalasi dibatalkan');
-    deferredInstallPrompt = null;
-  });
-});
-document.getElementById('btn-install-dismiss').addEventListener('click', function() {
-  hideInstallBanner();
-  localStorage.setItem('qoovy_pwa_dismissed', Date.now().toString());
-  toast('Bisa dipasang nanti lewat menu browser');
-});
-window.addEventListener('appinstalled', function() {
-  hideInstallBanner(); deferredInstallPrompt = null;
-  localStorage.setItem('qoovy_pwa_installed', '1'); toast('Qoovy terpasang!');
-});
-
-// ════════════════════════════════════════════════════════════
-//  PWA — UPDATE BANNER
-// ════════════════════════════════════════════════════════════
-var pwaReloading = false;
-var updateBanner = document.getElementById('update-banner');
-var updateWorker = null;
-function showUpdateBanner(worker) {
-  updateWorker = worker;
-  if (updateBanner) setTimeout(function() { updateBanner.classList.add('show'); }, 1000);
-}
-function hideUpdateBanner() { if (updateBanner) updateBanner.classList.remove('show'); }
-function pwaReloadForUpdate() {
-  hideUpdateBanner(); pwaReloading = true;
-  if (updateWorker) updateWorker.postMessage({ type: 'SKIP_WAITING' });
-  else if (navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-  else window.location.reload();
-}
-
-// ════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════
 //  INIT
-// ════════════════════════════════════════════════════════════
-(function detectDisplayMode() {
-  var isStandalone = window.navigator.standalone === true
-    || window.matchMedia('(display-mode: standalone)').matches
-    || window.matchMedia('(display-mode: window-controls-overlay)').matches;
-  if (isStandalone) {
-    document.title = 'Qoovy';
-    localStorage.setItem('qoovy_pwa_installed', '1');
-    localStorage.setItem('qoovy_pwa_dismissed', 'standalone');
-  }
-})();
-
-(function checkDismissExpiry() {
-  var dismissed = localStorage.getItem('qoovy_pwa_dismissed');
-  if (dismissed && dismissed !== 'standalone') {
-    var ts = parseInt(dismissed, 10);
-    if (!isNaN(ts) && Date.now() - ts > 7 * 24 * 3600 * 1000) localStorage.removeItem('qoovy_pwa_dismissed');
-  }
-})();
-
-window.addEventListener('load', function() {
+// ═══════════════════════════════════════════
+window.addEventListener('load',function(){
   loadFromStorage();
   showDemoPlaylist('demo');
   renderHistoryList();
   renderQueueList();
-  setTimeout(function() { openModal(true); }, 500);
+  setTimeout(function(){openModal(true);},500);
 });
 </script>
 </body>
