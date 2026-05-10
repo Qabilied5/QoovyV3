@@ -334,7 +334,7 @@ header {
   box-shadow:0 0 0 1px rgba(167,139,250,0.08), 0 8px 64px rgba(0,0,0,0.8), 0 0 60px rgba(99,68,255,0.12);
   aspect-ratio:16/9; background:#000;
 }
-/* FIX: iframe-shield selalu aktif saat adblock ON — mencegah iklan terlihat */
+/* iframe-shield: selalu blocking selama adblock aktif + loading */
 .iframe-shield {
   position:absolute; inset:0; z-index:10;
   pointer-events:none;
@@ -1007,275 +1007,174 @@ var mobilePlaylistOpen = false;
 var activeTab = 'playlist';
 
 // ════════════════════════════════════════════════════════════
-//  TRACK END GUARD — mencegah handleTrackEnd() dipanggil ganda
+//  TRACK END GUARD
 // ════════════════════════════════════════════════════════════
 var _trackEndFired = false;
 
 // ════════════════════════════════════════════════════════════
-//  ADBLOCK SYSTEM — VERSI DIPERKUAT
+//  ADBLOCK SYSTEM — STRATEGI BARU: MUTE PENUH SELAMA WINDOW AMAN
 //
-//  Strategi baru:
-//  1. Saat playTrack() dipanggil → overlay SELALU tampil, audio MUTE
-//  2. Iframe diload. Kita tunggu onStateChange = 1 (playing)
-//  3. Saat playing, kita request videoData via postMessage
-//  4. Jika video_id COCOK dengan yg kita minta → LULUS, overlay hilang
-//  5. Jika TIDAK cocok (iklan berjalan) → reload iframe
-//  6. Fallback timeout 10 detik → coba release (mungkin videoData tidak terkirim)
+//  CARA KERJA:
+//  1. Saat playTrack() → MUTE TOTAL + tampilkan overlay
+//  2. Tunggu state=1 (video mulai play) → mulai countdown 8 detik
+//  3. Selama 8 detik: audio tetap MUTE, overlay tampil
+//     → Ini memastikan iklan preroll (maks 5-6 detik) tidak terdengar
+//  4. Setelah 8 detik → unmute, sembunyikan overlay
+//  5. Jika state=0 (video end) terjadi SEBELUM 8 detik selesai
+//     → skip iklan (pindah lagu), karena iklan sangat pendek
 //
-//  Tambahan: deteksi via URL iframe.src jika postMessage tidak responsif
+//  KENAPA LEBIH RELIABLE:
+//  - Tidak bergantung pada postMessage/videoData yang sering tidak reliable
+//  - Iklan YouTube preroll: 0-5 detik (skippable) atau 5-15 detik (non-skip)
+//  - Dengan mute 8 detik: user tidak mendengar iklan sama sekali
+//  - Overlay menutupi visual iklan
 // ════════════════════════════════════════════════════════════
 var ADBLOCK = {
-  expectedId: null,
-  loadSession: 0,
-  verified: false,
-  reloadCount: 0,
-  MAX_RELOAD: 3,
-  scanTimer: null,
-  fallbackTimer: null,
+  session: 0,
+  muteWindowMs: 8000,      // durasi mute setelah video mulai play (ms)
+  releaseTimer: null,
+  countdownTimer: null,
   progressTimer: null,
-  isBlocking: false,
-  muteWas: false,
-  // FIX: waitingForStateOne = true saat iframe baru di-load,
-  // kita tidak release sampai state=1 dan video terverifikasi
-  waitingForStateOne: false,
+  stateOneReceived: false,  // apakah sudah menerima state=1
+  released: false,          // apakah overlay sudah dilepas
+  muteWas: false,           // status mute user sebelum adblock
 
+  // Dipanggil saat playTrack() baru
   init: function(videoId) {
-    var session = ++this.loadSession;
-    this.expectedId = videoId;
-    this.verified = false;
-    this.reloadCount = 0;
-    this.isBlocking = false;
-    this.waitingForStateOne = true;
-    this._stopAll();
-    this._showLoadingOverlay();
-    this._setShield(true);
+    this.session++;
+    var s = this.session;
+    this.stateOneReceived = false;
+    this.released = false;
     this.muteWas = isMuted;
-    // SELALU mute dulu — iklan tidak boleh terdengar sama sekali
-    this._forceMuteHard(true);
-    return session;
-  },
 
-  startScan: function(session) {
-    if (this.loadSession !== session) return;
-
-    var self = this;
-    var prog = 0;
-    this.progressTimer = setInterval(function() {
-      prog = Math.min(88, prog + 8);
-      self._setProgress(prog);
-    }, 300);
-
-    // Fallback: jika 10 detik belum verified, coba release paksa
-    this.fallbackTimer = setTimeout(function() {
-      if (self.loadSession !== session) return;
-      if (!self.verified) {
-        // Coba minta videoData sekali lagi sebelum release
-        self._requestVideoData();
-        setTimeout(function() {
-          if (self.loadSession === session && !self.verified) {
-            self._release(session, true);
-          }
-        }, 1500);
-      }
-    }, 10000);
-
-    // Poll videoData setiap 1.2 detik — lebih agresif dari sebelumnya
-    var tick = 0;
-    this.scanTimer = setInterval(function() {
-      if (self.loadSession !== session) { self._stopScan(); return; }
-      tick++;
-      self._requestVideoData();
-      if (tick >= 12) self._stopScan(); // stop polling setelah ~14 detik total
-    }, 1200);
-  },
-
-  _requestVideoData: function() {
-    // Request via postMessage ke iframe
-    var iframe = document.getElementById('yt-iframe');
-    if (!iframe || !iframe.contentWindow) return;
-    try {
-      iframe.contentWindow.postMessage(JSON.stringify({
-        event: 'command', func: 'getVideoData', args: []
-      }), '*');
-      // Juga request via listening channel
-      iframe.contentWindow.postMessage(JSON.stringify({
-        event: 'listening', id: 1, channel: 'widget',
-        params: JSON.stringify({ videoData: true, currentTime: true, duration: true })
-      }), '*');
-    } catch(e) {}
-  },
-
-  onStateChange: function(session, state) {
-    if (this.loadSession !== session) return;
-
-    if (state === 1) {
-      // Video mulai playing — ini saat kita perlu verifikasi
-      this.waitingForStateOne = false;
-      if (!this.verified) {
-        // Minta data video segera
-        this._requestVideoData();
-        // Jika dalam 1.5 detik tidak ada konfirmasi, cek via fallback ringan
-        var self = this;
-        setTimeout(function() {
-          if (self.loadSession === session && !self.verified && !self.isBlocking) {
-            // Jika sudah state=1 dan tidak ada iklan terdeteksi dalam 1.5 detik,
-            // kemungkinan besar sudah aman (videoData mungkin tidak dikirim oleh YT)
-            self._requestVideoData();
-            setTimeout(function() {
-              if (self.loadSession === session && !self.verified && !self.isBlocking) {
-                // Anggap aman, release overlay
-                self.verified = true;
-                self._release(session, false);
-              }
-            }, 1500);
-          }
-        }, 1500);
-      }
-    } else if (state === 2) {
-      // Paused — normal
-    } else if (state === 0) {
-      // Ended — jangan interferensi, biarkan track end handler yang urus
-    } else if (state === 3) {
-      // Buffering — OK
-    }
-  },
-
-  onVideoData: function(session, videoData) {
-    if (this.loadSession !== session) return;
-    if (!videoData || !videoData.video_id || !this.expectedId) return;
-
-    var playingId = videoData.video_id;
-    var expected = this.expectedId;
-
-    if (playingId === expected) {
-      // Video yang benar sedang diputar
-      if (!this.verified) {
-        this.verified = true;
-        this._release(session, false);
-      }
-    } else if (playingId && playingId !== expected) {
-      // IKLAN TERDETEKSI — video ID berbeda!
-      if (!this.isBlocking) {
-        this._blockAd(session, playingId);
-      }
-    }
-  },
-
-  _release: function(session, isFallback) {
-    if (this.loadSession !== session) return;
     this._stopAll();
-    this.isBlocking = false;
-    this.waitingForStateOne = false;
-    this._setProgress(100);
-
-    // Restore audio ke state seharusnya
-    if (this.muteWas) {
-      this._forceMuteHard(true);
-    } else {
-      this._forceMuteHard(false);
-    }
-
-    var self = this;
-    setTimeout(function() {
-      if (self.loadSession !== session) return;
-      var overlay = document.getElementById('ad-overlay');
-      if (overlay) overlay.classList.remove('show');
-      self._setShield(false);
-
-      // Tampilkan badge "Shield aktif" sebentar
-      var badge = document.getElementById('ad-block-status');
-      if (badge) {
-        badge.classList.add('show');
-        setTimeout(function() { badge.classList.remove('show'); }, 2200);
-      }
-    }, isFallback ? 80 : 200);
-  },
-
-  _blockAd: function(session, adId) {
-    if (this.loadSession !== session || !adBlockEnabled) return;
-    this.isBlocking = true;
-    this.verified = false;
-    adsBlockedCount++;
-    updateAdCount();
-
-    // Paksa mute total selama iklan
-    this._forceMuteHard(true);
+    this._showOverlay('MEMUAT KONTEN', 'Menyiapkan lagu untukmu...', false);
     this._setShield(true);
-    this._showBlockingOverlay('IKLAN DIBLOKIR', 'Memuat ulang konten bersih...');
-    this._stopScan();
-    if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
+    this._hardMute(true); // MUTE TOTAL dari awal
 
-    this._triggerReload(session);
+    // Fallback: jika state=1 tidak pernah datang dalam 15 detik, release paksa
+    var self = this;
+    this.releaseTimer = setTimeout(function() {
+      if (self.session !== s) return;
+      self._release(s);
+    }, 15000);
+
+    return s;
   },
 
-  _triggerReload: function(session) {
-    if (this.loadSession !== session) return;
-    this.reloadCount++;
-    if (this.reloadCount > this.MAX_RELOAD) {
-      toast('Iklan persisten, lanjut ke lagu berikutnya', 'warn');
-      this._stopAll();
-      setTimeout(function() { safeHandleTrackEnd(); }, 300);
+  // Dipanggil dari handleStateChange saat state === 1 (video playing)
+  onPlaying: function(session) {
+    if (this.session !== session) return;
+    if (this.stateOneReceived) return; // sudah pernah dipanggil, skip
+    this.stateOneReceived = true;
+
+    // ── FIX BUG 1: Update UI play/pause SEGERA saat state=1 ──
+    // Ini dilakukan di handleStateChange, tapi kita pastikan di sini juga
+    _setPlayStateUI(true);
+
+    if (!adBlockEnabled) {
+      // Adblock mati → langsung release
+      this._release(session);
       return;
     }
 
-    // Stop video dulu
-    ytCmd('stopVideo', []);
+    // Adblock aktif → tahan mute selama muteWindowMs
     var self = this;
+    var ms = this.muteWindowMs;
+    var elapsed = 0;
+    var step = 200;
 
+    // Update progress bar secara visual selama countdown
+    if (this.progressTimer) clearInterval(this.progressTimer);
+    this.progressTimer = setInterval(function() {
+      if (self.session !== session) { clearInterval(self.progressTimer); return; }
+      elapsed += step;
+      var pct = Math.min(100, (elapsed / ms) * 100);
+      self._setProgress(pct);
+      // Update countdown angka (hitung mundur dari 8 ke 0)
+      var remaining = Math.max(0, Math.ceil((ms - elapsed) / 1000));
+      var cdEl = document.getElementById('ad-countdown');
+      if (cdEl && cdEl.style.display !== 'none') cdEl.textContent = remaining;
+      if (elapsed >= ms) {
+        clearInterval(self.progressTimer);
+        self.progressTimer = null;
+      }
+    }, step);
+
+    // Release setelah muteWindowMs
+    if (this.releaseTimer) clearTimeout(this.releaseTimer);
+    this.releaseTimer = setTimeout(function() {
+      if (self.session !== session) return;
+      self._release(session);
+    }, ms);
+
+    // Tampilkan countdown di overlay setelah 1 detik
     setTimeout(function() {
-      if (self.loadSession !== session) return;
-      var iframe = document.getElementById('yt-iframe');
-      if (!iframe || !self.expectedId) return;
-
-      // Rebuild iframe src dengan timestamp baru untuk bust cache
-      iframe.src = buildIframeSrc(self.expectedId, session, self.reloadCount);
-      self.verified = false;
-      self.isBlocking = false;
-      self.waitingForStateOne = true;
-
-      // Restart scan
-      self._stopScan();
-      if (self.fallbackTimer) clearTimeout(self.fallbackTimer);
-
-      // Restart progress animation
-      if (self.progressTimer) clearInterval(self.progressTimer);
-      var prog = 0;
-      self.progressTimer = setInterval(function() {
-        prog = Math.min(88, prog + 8);
-        self._setProgress(prog);
-      }, 300);
-
-      self.fallbackTimer = setTimeout(function() {
-        if (self.loadSession !== session) return;
-        if (!self.verified) {
-          self._requestVideoData();
-          setTimeout(function() {
-            if (self.loadSession === session && !self.verified) {
-              self._release(session, true);
-            }
-          }, 1500);
-        }
-      }, 10000);
-
-      var tick = 0;
-      self.scanTimer = setInterval(function() {
-        if (self.loadSession !== session) { self._stopScan(); return; }
-        tick++;
-        self._requestVideoData();
-        if (tick >= 12) self._stopScan();
-      }, 1200);
-    }, 400);
+      if (self.session !== session || self.released) return;
+      var cdEl = document.getElementById('ad-countdown');
+      var skipBtn = document.getElementById('btn-skip-now');
+      if (cdEl) { cdEl.style.display = 'block'; cdEl.textContent = Math.ceil(ms / 1000); }
+      if (skipBtn) skipBtn.style.display = 'block';
+    }, 1000);
   },
 
-  forceSkip: function() {
-    var session = this.loadSession;
-    this.reloadCount = this.MAX_RELOAD - 1;
+  // Dipanggil saat state=0 (video selesai) selama masih dalam mute window
+  onEnded: function(session) {
+    if (this.session !== session) return;
+    if (this.released) return;
+    // Video berakhir sangat cepat → kemungkinan iklan pendek yang tidak bisa di-skip
+    // Langsung pindah lagu
     this._stopAll();
-    this.isBlocking = false;
-    this._triggerReload(session);
+    this._hardMute(true); // tetap mute sampai lagu baru siap
   },
 
-  _showLoadingOverlay: function() {
+  // Lepas overlay dan unmute
+  _release: function(session) {
+    if (this.session !== session) return;
+    if (this.released) return;
+    this.released = true;
+    this._stopAll();
+    this._setProgress(100);
+    this._setShield(false);
+
+    var overlay = document.getElementById('ad-overlay');
+    if (overlay) overlay.classList.remove('show');
+
+    // Restore audio
+    if (!this.muteWas && !isMuted) {
+      this._hardMute(false);
+    }
+
+    // Badge "Shield aktif" sebentar
+    var badge = document.getElementById('ad-block-status');
+    if (badge) {
+      badge.classList.add('show');
+      setTimeout(function() { badge.classList.remove('show'); }, 2200);
+    }
+
+    adsBlockedCount++;
+    updateAdCount();
+  },
+
+  // Paksa skip (user klik "Lewati")
+  forceSkip: function() {
+    if (this.released) return;
+    var s = this.session;
+    this._stopAll();
+    this._release(s);
+  },
+
+  // Matikan semua (user toggle adblock off, atau pindah lagu)
+  disable: function() {
+    this._stopAll();
+    this.released = true;
+    var overlay = document.getElementById('ad-overlay');
+    if (overlay) overlay.classList.remove('show');
+    this._setShield(false);
+    if (!isMuted) this._hardMute(false);
+  },
+
+  _showOverlay: function(phase, sub, warn) {
     var overlay = document.getElementById('ad-overlay');
     var shieldEl = document.getElementById('ad-shield-icon');
     var titleEl = document.getElementById('ad-title');
@@ -1283,29 +1182,19 @@ var ADBLOCK = {
     var subEl = document.getElementById('ad-sub');
     var cdEl = document.getElementById('ad-countdown');
     var skipBtn = document.getElementById('btn-skip-now');
-    if (shieldEl) shieldEl.classList.remove('warn');
-    if (titleEl) { titleEl.textContent = 'Shield Aktif'; titleEl.classList.remove('warn'); }
-    if (phaseEl) phaseEl.textContent = 'MEMUAT KONTEN';
-    if (subEl) subEl.textContent = 'Menyiapkan lagu untukmu...';
-    if (cdEl) cdEl.style.display = 'none';
+    if (warn) {
+      if (shieldEl) shieldEl.classList.add('warn');
+      if (titleEl) { titleEl.textContent = 'IKLAN DIBLOKIR'; titleEl.classList.add('warn'); }
+    } else {
+      if (shieldEl) shieldEl.classList.remove('warn');
+      if (titleEl) { titleEl.textContent = 'Shield Aktif'; titleEl.classList.remove('warn'); }
+    }
+    if (phaseEl) phaseEl.textContent = phase;
+    if (subEl) subEl.textContent = sub;
+    if (cdEl) { cdEl.style.display = 'none'; cdEl.textContent = '8'; }
     if (skipBtn) skipBtn.style.display = 'none';
     this._setProgress(0);
     if (overlay) overlay.classList.add('show');
-  },
-
-  _showBlockingOverlay: function(phase, sub) {
-    var shieldEl = document.getElementById('ad-shield-icon');
-    var titleEl = document.getElementById('ad-title');
-    var phaseEl = document.getElementById('ad-phase');
-    var subEl = document.getElementById('ad-sub');
-    var cdEl = document.getElementById('ad-countdown');
-    var skipBtn = document.getElementById('btn-skip-now');
-    if (shieldEl) shieldEl.classList.add('warn');
-    if (titleEl) { titleEl.textContent = phase; titleEl.classList.add('warn'); }
-    if (phaseEl) phaseEl.textContent = 'IKLAN TERDETEKSI';
-    if (subEl) subEl.textContent = sub;
-    if (cdEl) { cdEl.style.display = 'block'; cdEl.textContent = '...'; }
-    if (skipBtn) skipBtn.style.display = 'block';
   },
 
   _setProgress: function(pct) {
@@ -1320,42 +1209,27 @@ var ADBLOCK = {
     else shield.classList.remove('blocking');
   },
 
-  // FIX: forceMuteHard — pakai dua cara sekaligus agar audio benar-benar bisu
-  _forceMuteHard: function(mute) {
+  _hardMute: function(mute) {
+    var iframe = document.getElementById('yt-iframe');
+    if (!iframe || !iframe.contentWindow) return;
     if (mute) {
-      ytCmd('mute', []);
-      ytCmd('setVolume', [0]);
+      _ytCmd('mute', []);
+      _ytCmd('setVolume', [0]);
     } else {
-      if (!isMuted) {
-        ytCmd('unMute', []);
-        ytCmd('setVolume', [volLevel]);
-      }
+      _ytCmd('unMute', []);
+      _ytCmd('setVolume', [volLevel]);
     }
   },
 
   _stopAll: function() {
-    this._stopScan();
-    if (this.fallbackTimer) { clearTimeout(this.fallbackTimer); this.fallbackTimer = null; }
+    if (this.releaseTimer) { clearTimeout(this.releaseTimer); this.releaseTimer = null; }
     if (this.progressTimer) { clearInterval(this.progressTimer); this.progressTimer = null; }
-  },
-
-  _stopScan: function() {
-    if (this.scanTimer) { clearInterval(this.scanTimer); this.scanTimer = null; }
-  },
-
-  disable: function() {
-    this._stopAll();
-    var overlay = document.getElementById('ad-overlay');
-    if (overlay) overlay.classList.remove('show');
-    this._setShield(false);
-    if (!isMuted) {
-      ytCmd('unMute', []);
-      ytCmd('setVolume', [volLevel]);
-    }
   }
 };
 
-function skipAdNow() { ADBLOCK.forceSkip(); }
+function skipAdNow() {
+  ADBLOCK.forceSkip();
+}
 
 function updateAdCount() {
   var el = document.getElementById('pill-adblock-count');
@@ -1385,9 +1259,9 @@ function toggleAdBlock() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  YOUTUBE IFRAME API
+//  YOUTUBE IFRAME HELPERS
 // ════════════════════════════════════════════════════════════
-function buildIframeSrc(videoId, session, reload) {
+function buildIframeSrc(videoId) {
   var origin = window.location.origin || 'http://localhost';
   var ts = Date.now();
   return 'https://www.youtube-nocookie.com/embed/' + videoId
@@ -1395,10 +1269,10 @@ function buildIframeSrc(videoId, session, reload) {
     + '&iv_load_policy=3&playsinline=1&cc_load_policy=0&disablekb=1'
     + '&fs=0&hl=id&color=white&start=0'
     + '&origin=' + encodeURIComponent(origin)
-    + '&_s=' + (session || 0) + '&_r=' + (reload || 0) + '&_t=' + ts;
+    + '&_t=' + ts;
 }
 
-function ytCmd(func, args) {
+function _ytCmd(func, args) {
   var iframe = document.getElementById('yt-iframe');
   if (!iframe || !iframe.contentWindow) return;
   try {
@@ -1410,94 +1284,72 @@ function ytCmd(func, args) {
 
 // ════════════════════════════════════════════════════════════
 //  MESSAGE LISTENER dari YouTube iframe
-//  FIX: lebih banyak sumber data yang diterima
 // ════════════════════════════════════════════════════════════
 window.addEventListener('message', function(e) {
-  // Terima dari youtube-nocookie.com ATAU youtube.com
-  if (!e.origin) return;
-  var isYT = e.origin.includes('youtube') || e.origin.includes('youtu.be');
-  if (!isYT) return;
-
+  if (!e.origin || !e.origin.includes('youtube')) return;
   try {
     var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
     if (!data) return;
-    var session = ADBLOCK.loadSession;
 
     if (data.event === 'onReady') {
-      // Segera mute saat ready
-      ytCmd('mute', []);
-      ytCmd('setVolume', [0]);
-      // Request videoData segera
-      ADBLOCK._requestVideoData();
+      // Pastikan mute saat ready
+      _ytCmd('mute', []);
+      _ytCmd('setVolume', [0]);
     }
 
     if (data.event === 'onStateChange') {
       handleStateChange(data.info);
-      ADBLOCK.onStateChange(session, data.info);
     }
 
     if (data.event === 'infoDelivery' && data.info) {
       var info = data.info;
-
-      // Update progress
       if (info.currentTime !== undefined) simCur = info.currentTime;
       if (info.duration !== undefined && info.duration > 0) simDur = info.duration;
-      if (info.currentTime !== undefined || info.duration !== undefined) {
-        updateProgressUI();
-      }
-
-      // Cek video data untuk adblock
-      if (info.videoData) {
-        ADBLOCK.onVideoData(session, info.videoData);
-      }
-
-      // Beberapa versi YT mengirim video_id langsung di info
-      if (info.video_id && ADBLOCK.expectedId) {
-        ADBLOCK.onVideoData(session, { video_id: info.video_id });
-      }
+      if (info.currentTime !== undefined || info.duration !== undefined) updateProgressUI();
     }
-
-    // Beberapa event YT mengirim 'onVideoProgress'
-    if (data.event === 'onVideoProgress' && data.info) {
-      if (data.info.currentTime !== undefined) simCur = data.info.currentTime;
-    }
-
-  } catch(e2) {}
+  } catch(ex) {}
 });
 
 // ════════════════════════════════════════════════════════════
 //  STATE CHANGE HANDLER
-//  FIX BUG 2: handleStateChange harus update UI dengan benar
-//  setelah pindah lagu via queue. Masalah sebelumnya:
-//  - setPlayState() dipanggil tapi startProgTimer() tidak jalan
-//    karena hideLdr() di-delay dan state sudah berubah
+//  FIX BUG 2: setPlayStateUI() SELALU dipanggil tanpa syarat
+//  berdasarkan event YT, terlepas dari status adblock
 // ════════════════════════════════════════════════════════════
 function handleStateChange(state) {
+  var session = ADBLOCK.session;
+
   if (state === 1) {
-    // Playing — ini adalah satu-satunya tempat yang set UI ke "playing"
+    // Video playing — update UI SEGERA
     hideLdr();
-    setPlayState(true);   // <-- FIX: pastikan UI pause/play sync
-    startProgTimer();     // <-- FIX: restart timer setiap kali state=1
+    _setPlayStateUI(true);   // ← FIX: langsung update tombol
+    startProgTimer();
+
+    // Beritahu ADBLOCK untuk mulai countdown mute window
+    ADBLOCK.onPlaying(session);
+
   } else if (state === 2) {
     // Paused
-    setPlayState(false);
+    _setPlayStateUI(false);
     stopProgTimer();
+
   } else if (state === 0) {
-    // Track ended
-    setPlayState(false);
+    // Ended
+    _setPlayStateUI(false);
     stopProgTimer();
+    ADBLOCK.onEnded(session);
     safeHandleTrackEnd();
+
   } else if (state === 3) {
-    // Buffering
+    // Buffering — jangan ubah play state
     showLdr();
-    // Jangan set isPlaying=false saat buffering — video masih "akan" play
+
   } else if (state === -1 || state === 5) {
     hideLdr();
   }
 }
 
 // ════════════════════════════════════════════════════════════
-//  SAFE TRACK END — guard mencegah pemanggilan ganda
+//  SAFE TRACK END
 // ════════════════════════════════════════════════════════════
 function safeHandleTrackEnd() {
   if (_trackEndFired) return;
@@ -1509,7 +1361,6 @@ function safeHandleTrackEnd() {
 function _doHandleTrackEnd() {
   if (repeatMode === 2) { reloadCurrentTrack(); return; }
 
-  // Cek queue terlebih dahulu
   if (musicQueue.length > 0) {
     var nxt = musicQueue.shift();
     renderQueueList();
@@ -1519,7 +1370,6 @@ function _doHandleTrackEnd() {
       if (musicQueue.length > 0) { pill.textContent = 'Queue: ' + musicQueue.length; pill.classList.add('show'); }
       else pill.classList.remove('show');
     }
-
     var fi = tracks.findIndex(function(t) { return t.id === nxt.id; });
     if (fi !== -1) {
       playTrack(fi);
@@ -1537,11 +1387,10 @@ function _doHandleTrackEnd() {
 
 // ════════════════════════════════════════════════════════════
 //  PROGRESS BAR
-//  FIX: progTimer lebih sering sync ke YT, dan melalui safeHandleTrackEnd
 // ════════════════════════════════════════════════════════════
 var progTick = 0;
 function startProgTimer() {
-  stopProgTimer(); // selalu bersihkan timer lama dulu
+  stopProgTimer();
   progTick = 0;
   progTimer = setInterval(function() {
     if (!isPlaying) return;
@@ -1550,15 +1399,23 @@ function startProgTimer() {
       simCur = simDur;
       updateProgressUI();
       stopProgTimer();
-      setPlayState(false);
+      _setPlayStateUI(false);
       safeHandleTrackEnd();
       return;
     }
     updateProgressUI();
     progTick++;
-    // Sync ke YT setiap ~4.5 detik
     if (progTick % 5 === 0) {
-      ADBLOCK._requestVideoData();
+      // Request info berkala untuk sync
+      var iframe = document.getElementById('yt-iframe');
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage(JSON.stringify({
+            event: 'listening', id: 1, channel: 'widget',
+            params: JSON.stringify({ currentTime: true, duration: true })
+          }), '*');
+        } catch(e) {}
+      }
     }
   }, 900);
 }
@@ -1586,69 +1443,55 @@ function seekTo(e) {
   var clientX = e.touches ? e.touches[0].clientX : e.clientX;
   var pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
   simCur = pct * (simDur || 300);
-  ytCmd('seekTo', [simCur, true]);
+  _ytCmd('seekTo', [simCur, true]);
   updateProgressUI();
 }
 
 // ════════════════════════════════════════════════════════════
 //  PLAYBACK
-//  FIX BUG 2 UTAMA: playTrack() harus:
-//  1. Reset semua state terlebih dahulu
-//  2. setPlayState(false) dulu agar UI bersih
-//  3. Biarkan handleStateChange(1) yang trigger setPlayState(true)
-//     dan startProgTimer() — sehingga selalu sync dengan YT
 // ════════════════════════════════════════════════════════════
 function playTrack(idx) {
   if (idx < 0 || idx >= tracks.length) return;
   curIdx = idx;
   var t = tracks[idx];
 
-  // 1. Reset semua state audio/progress
+  // Reset state
   stopProgTimer();
   simCur = 0;
   simDur = 0;
   progTick = 0;
-
-  // 2. Reset play state ke "stopped" dulu — UI akan ter-update oleh YT events
-  setPlayState(false);
-
-  // 3. Reset track end guard untuk lagu baru
   _trackEndFired = false;
 
-  // 4. Tampilkan player
+  // Reset UI ke "stopped"
+  _setPlayStateUI(false);
+
+  // Tampilkan player
   document.getElementById('idle-view').style.display = 'none';
   document.getElementById('player-view').style.display = 'block';
   document.getElementById('idle-disc').classList.add('spin');
   showLdr();
 
-  // 5. Reset progress UI
+  // Reset progress UI
   document.getElementById('prog-fill').style.width = '0%';
   document.getElementById('t-cur').textContent = '0:00';
   document.getElementById('t-dur').textContent = '0:00';
 
-  // 6. Update info lagu
+  // Info lagu
   document.getElementById('np-title').textContent = t.title;
   document.getElementById('np-ch').textContent = t.ch;
 
-  // 7. Init ADBLOCK — MUTE akan dilakukan di sini
-  var session = ADBLOCK.init(t.id);
+  // Init ADBLOCK (mute + overlay)
+  ADBLOCK.init(t.id);
 
-  // 8. Load iframe — audio masih mute sampai ADBLOCK release
-  document.getElementById('yt-iframe').src = buildIframeSrc(t.id, session, 0);
+  // Load iframe
+  document.getElementById('yt-iframe').src = buildIframeSrc(t.id);
 
-  // 9. Update playlist UI
+  // Update playlist UI
   addPlayHistory(t);
   renderTracks();
   scrollToTrack(idx);
 
-  // 10. Start scan setelah 800ms (beri waktu iframe untuk init)
-  setTimeout(function() {
-    if (ADBLOCK.loadSession === session) {
-      ADBLOCK.startScan(session);
-    }
-  }, 800);
-
-  // 11. Fallback: sembunyikan loading spinner setelah 15 detik max
+  // Fallback sembunyikan spinner
   setTimeout(function() { hideLdr(); }, 15000);
 
   if (window.innerWidth <= 640) setTimeout(closeMobilePlaylist, 200);
@@ -1657,33 +1500,24 @@ function playTrack(idx) {
 function reloadCurrentTrack() {
   if (curIdx < 0) return;
   stopProgTimer();
-  simCur = 0;
-  simDur = 0;
+  simCur = 0; simDur = 0;
   _trackEndFired = false;
-  setPlayState(false);
+  _setPlayStateUI(false);
   var t = tracks[curIdx];
-  var session = ADBLOCK.init(t.id);
-  document.getElementById('yt-iframe').src = buildIframeSrc(t.id, session, 0);
+  ADBLOCK.init(t.id);
+  document.getElementById('yt-iframe').src = buildIframeSrc(t.id);
   showLdr();
-  setTimeout(function() {
-    if (ADBLOCK.loadSession === session) ADBLOCK.startScan(session);
-  }, 800);
 }
 
 function togglePlay() {
   if (curIdx < 0) { if (tracks.length > 0) playTrack(0); return; }
   if (isPlaying) {
-    ytCmd('pauseVideo', []);
-    setPlayState(false);
+    _ytCmd('pauseVideo', []);
+    _setPlayStateUI(false);
     stopProgTimer();
   } else {
-    ytCmd('playVideo', []);
-    // Jangan langsung set isPlaying=true — tunggu state=1 dari YT
-    // Tapi jika ADBLOCK sudah verified, kita bisa langsung
-    if (ADBLOCK.verified) {
-      setPlayState(true);
-      startProgTimer();
-    }
+    _ytCmd('playVideo', []);
+    // UI akan diupdate oleh handleStateChange(1) dari YT
   }
 }
 
@@ -1695,7 +1529,7 @@ function prevTrack() {
 function nextTrack() {
   if (!tracks.length) return;
   if (musicQueue.length > 0) {
-    _trackEndFired = false; // reset guard agar bisa jalan
+    _trackEndFired = false;
     safeHandleTrackEnd();
     return;
   }
@@ -1714,7 +1548,7 @@ function _doNextTrack() {
       ni = curIdx + 1;
       if (ni >= tracks.length) {
         toast('Playlist selesai');
-        setPlayState(false);
+        _setPlayStateUI(false);
         stopProgTimer();
         return;
       }
@@ -1724,10 +1558,10 @@ function _doNextTrack() {
 }
 
 // ════════════════════════════════════════════════════════════
-//  SET PLAY STATE — update UI tombol play/pause dan disc
-//  FIX: fungsi ini hanya update UI, tidak mempengaruhi YT
+//  SET PLAY STATE UI — HANYA UPDATE UI, tidak kontrol YT
+//  FIX BUG 2: Pisah dari logika adblock supaya selalu sync
 // ════════════════════════════════════════════════════════════
-function setPlayState(state) {
+function _setPlayStateUI(state) {
   isPlaying = state;
   document.getElementById('ico-play').style.display = state ? 'none' : 'block';
   document.getElementById('ico-pause').style.display = state ? 'block' : 'none';
@@ -1779,16 +1613,16 @@ function toggleRepeat() {
 // ════════════════════════════════════════════════════════════
 function onVolSlider(v) {
   volLevel = Number(v);
-  if (!isMuted && ADBLOCK.verified) ytCmd('setVolume', [volLevel]);
+  if (!isMuted && ADBLOCK.released) _ytCmd('setVolume', [volLevel]);
 }
 function toggleMute() {
   isMuted = !isMuted;
   if (isMuted) {
-    ytCmd('mute', []);
+    _ytCmd('mute', []);
   } else {
-    if (ADBLOCK.verified) {
-      ytCmd('unMute', []);
-      ytCmd('setVolume', [volLevel]);
+    if (ADBLOCK.released) {
+      _ytCmd('unMute', []);
+      _ytCmd('setVolume', [volLevel]);
     }
   }
   document.getElementById('ico-vol').style.display = isMuted ? 'none' : 'block';
@@ -2184,7 +2018,6 @@ document.addEventListener('DOMContentLoaded', function() {
     '<circle cx="256" cy="256" r="18" fill="#080810"/>',
     '</svg>'
   ].join(''));
-
   var icon192 = "data:image/svg+xml," + encodeURIComponent([
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">',
     '<rect width="192" height="192" rx="42" fill="#080810"/>',
@@ -2197,44 +2030,24 @@ document.addEventListener('DOMContentLoaded', function() {
     '<circle cx="96" cy="96" r="8" fill="#080810"/>',
     '</svg>'
   ].join(''));
-
   var manifest = {
-    name: 'Qoovy Music Streaming',
-    short_name: 'Qoovy',
+    name: 'Qoovy Music Streaming', short_name: 'Qoovy',
     description: 'Putar musik favoritmu tanpa iklan — by Qabil',
-    start_url: './',
-    scope: './',
+    start_url: './', scope: './',
     display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
-    display: 'standalone',
-    background_color: '#080810',
-    theme_color: '#080810',
-    lang: 'id',
-    dir: 'ltr',
-    orientation: 'any',
-    categories: ['music', 'entertainment'],
-    shortcuts: [
-      {
-        name: 'Putar Acak',
-        short_name: 'Acak',
-        description: 'Putar playlist secara acak',
-        url: './?action=shuffle',
-        icons: [{ src: icon192, sizes: '192x192', type: 'image/svg+xml' }]
-      }
-    ],
+    display: 'standalone', background_color: '#080810', theme_color: '#080810',
+    lang: 'id', dir: 'ltr', orientation: 'any', categories: ['music', 'entertainment'],
     icons: [
       { src: icon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'any' },
       { src: icon192, sizes: '192x192', type: 'image/svg+xml', purpose: 'maskable' },
       { src: icon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'any' },
       { src: icon512, sizes: '512x512', type: 'image/svg+xml', purpose: 'maskable' }
-    ],
-    edge_side_panel: { preferred_width: 400 }
+    ]
   };
-
   try {
     var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
     var link = document.createElement('link');
-    link.rel = 'manifest';
-    link.href = URL.createObjectURL(blob);
+    link.rel = 'manifest'; link.href = URL.createObjectURL(blob);
     document.head.appendChild(link);
   } catch(e) {}
 })();
@@ -2244,26 +2057,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // ════════════════════════════════════════════════════════════
 (function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) return;
-
   var swCode = [
-    "var CACHE_NAME = 'qoovy-v6';",
+    "var CACHE_NAME = 'qoovy-v7';",
     "var PRECACHE = [self.registration.scope];",
-    "self.addEventListener('install', function(e) {",
-    "  e.waitUntil(caches.open(CACHE_NAME).then(function(c) { return c.addAll(PRECACHE); }).then(function() { return self.skipWaiting(); }).catch(function() { return self.skipWaiting(); }));",
-    "});",
-    "self.addEventListener('activate', function(e) {",
-    "  e.waitUntil(caches.keys().then(function(keys) { return Promise.all(keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); })); }).then(function() { return self.clients.claim(); }));",
-    "});",
-    "self.addEventListener('fetch', function(e) {",
-    "  var url = e.request.url;",
-    "  if (e.request.method !== 'GET') return;",
-    "  if (url.startsWith('chrome-extension://') || url.startsWith('blob:')) return;",
-    "  if (url.includes('youtube') || url.includes('googleapis') || url.includes('ytimg') || url.includes('corsproxy') || url.includes('allorigins')) return;",
-    "  e.respondWith(fetch(e.request).then(function(r) { if (r && r.status === 200 && r.type !== 'opaque') { var clone = r.clone(); caches.open(CACHE_NAME).then(function(c) { try { c.put(e.request, clone); } catch(ex) {} }); } return r; }).catch(function() { return caches.match(e.request).then(function(cached) { if (cached) return cached; if (e.request.mode === 'navigate') { return caches.match(self.registration.scope); } }); }));",
-    "});",
+    "self.addEventListener('install', function(e) { e.waitUntil(caches.open(CACHE_NAME).then(function(c) { return c.addAll(PRECACHE); }).then(function() { return self.skipWaiting(); }).catch(function() { return self.skipWaiting(); })); });",
+    "self.addEventListener('activate', function(e) { e.waitUntil(caches.keys().then(function(keys) { return Promise.all(keys.filter(function(k) { return k !== CACHE_NAME; }).map(function(k) { return caches.delete(k); })); }).then(function() { return self.clients.claim(); })); });",
+    "self.addEventListener('fetch', function(e) { var url = e.request.url; if (e.request.method !== 'GET') return; if (url.startsWith('chrome-extension://') || url.startsWith('blob:')) return; if (url.includes('youtube') || url.includes('googleapis') || url.includes('ytimg') || url.includes('corsproxy') || url.includes('allorigins')) return; e.respondWith(fetch(e.request).then(function(r) { if (r && r.status === 200 && r.type !== 'opaque') { var clone = r.clone(); caches.open(CACHE_NAME).then(function(c) { try { c.put(e.request, clone); } catch(ex) {} }); } return r; }).catch(function() { return caches.match(e.request).then(function(cached) { if (cached) return cached; if (e.request.mode === 'navigate') return caches.match(self.registration.scope); }); })); });",
     "self.addEventListener('message', function(e) { if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting(); });"
   ].join('\n');
-
   try {
     var blob = new Blob([swCode], { type: 'application/javascript' });
     var swUrl = URL.createObjectURL(blob);
@@ -2277,8 +2078,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBanner(nw);
           });
         });
-      })
-      .catch(function(err) {});
+      }).catch(function() {});
     navigator.serviceWorker.addEventListener('controllerchange', function() {
       if (pwaReloading) window.location.reload();
     });
@@ -2303,10 +2103,8 @@ if (!navigator.onLine) setTimeout(function() { offlineBar.classList.add('show');
 var deferredInstallPrompt = null;
 var installBanner = document.getElementById('install-banner');
 var installBannerTimer = null;
-
 window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault();
-  deferredInstallPrompt = e;
+  e.preventDefault(); deferredInstallPrompt = e;
   var dismissed = localStorage.getItem('qoovy_pwa_dismissed');
   var installed = localStorage.getItem('qoovy_pwa_installed');
   if (!dismissed && !installed) {
@@ -2314,35 +2112,29 @@ window.addEventListener('beforeinstallprompt', function(e) {
     installBannerTimer = setTimeout(showInstallBanner, delay);
   }
 });
-
 function showInstallBanner() { if (installBanner) installBanner.classList.add('show'); }
 function hideInstallBanner() {
   if (installBanner) installBanner.classList.remove('show');
   if (installBannerTimer) clearTimeout(installBannerTimer);
 }
-
 document.getElementById('btn-install-pwa').addEventListener('click', function() {
   hideInstallBanner();
   if (!deferredInstallPrompt) { toast('Gunakan menu browser (⋮) › Pasang Qoovy', 'warn'); return; }
   deferredInstallPrompt.prompt();
   deferredInstallPrompt.userChoice.then(function(r) {
     if (r.outcome === 'accepted') { toast('Qoovy berhasil dipasang!'); localStorage.setItem('qoovy_pwa_installed', '1'); }
-    else { toast('Instalasi dibatalkan'); }
+    else toast('Instalasi dibatalkan');
     deferredInstallPrompt = null;
   });
 });
-
 document.getElementById('btn-install-dismiss').addEventListener('click', function() {
   hideInstallBanner();
   localStorage.setItem('qoovy_pwa_dismissed', Date.now().toString());
   toast('Bisa dipasang nanti lewat menu browser');
 });
-
 window.addEventListener('appinstalled', function() {
-  hideInstallBanner();
-  deferredInstallPrompt = null;
-  localStorage.setItem('qoovy_pwa_installed', '1');
-  toast('Qoovy terpasang!');
+  hideInstallBanner(); deferredInstallPrompt = null;
+  localStorage.setItem('qoovy_pwa_installed', '1'); toast('Qoovy terpasang!');
 });
 
 // ════════════════════════════════════════════════════════════
@@ -2351,7 +2143,6 @@ window.addEventListener('appinstalled', function() {
 var pwaReloading = false;
 var updateBanner = document.getElementById('update-banner');
 var updateWorker = null;
-
 function showUpdateBanner(worker) {
   updateWorker = worker;
   if (updateBanner) setTimeout(function() { updateBanner.classList.add('show'); }, 1000);
@@ -2382,9 +2173,7 @@ function pwaReloadForUpdate() {
   var dismissed = localStorage.getItem('qoovy_pwa_dismissed');
   if (dismissed && dismissed !== 'standalone') {
     var ts = parseInt(dismissed, 10);
-    if (!isNaN(ts) && Date.now() - ts > 7 * 24 * 3600 * 1000) {
-      localStorage.removeItem('qoovy_pwa_dismissed');
-    }
+    if (!isNaN(ts) && Date.now() - ts > 7 * 24 * 3600 * 1000) localStorage.removeItem('qoovy_pwa_dismissed');
   }
 })();
 
