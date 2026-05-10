@@ -1292,6 +1292,7 @@ var _keepaliveWorker = null;
 var _workerTickCount  = 0;
 var _workerMissed     = 0;
 var _WORKER_BLOB_URL  = null;
+var _lastWorkerTickTs = 0;
 
 // Buat Worker dari Blob (tidak perlu file eksternal)
 function createKeepaliveWorker() {
@@ -1335,9 +1336,16 @@ function createKeepaliveWorker() {
         // Worker masih hidup — jalankan progress update jika sedang play
         _workerTickCount++;
         _workerMissed = 0;
+
+        var nowTs = msg.ts || Date.now();
+        var elapsed = 0.5;
+        if (_lastWorkerTickTs) {
+          elapsed = Math.max(0.1, Math.min(5, (nowTs - _lastWorkerTickTs) / 1000));
+        }
+        _lastWorkerTickTs = nowTs;
+
         if (isPlaying) {
-          // Advance progress dari worker tick (0.5s per tick)
-          simCur += 0.5;
+          simCur += elapsed;
           if (simDur > 0 && simCur >= simDur - 0.3) {
             simCur = simDur;
             updateProgressUI();
@@ -1386,6 +1394,8 @@ function destroyKeepaliveWorker() {
     _keepaliveWorker.terminate();
     _keepaliveWorker = null;
   }
+  _lastWorkerTickTs = 0;
+
   if (_WORKER_BLOB_URL) {
     URL.revokeObjectURL(_WORKER_BLOB_URL);
     _WORKER_BLOB_URL = null;
@@ -1427,6 +1437,7 @@ document.addEventListener('visibilitychange', function() {
     // Tampilkan status pill saat minimize (desktop)
     if (isPlaying && curIdx >= 0 && tracks[curIdx]) {
       showBgStatusPill(tracks[curIdx]);
+      createKeepaliveWorker();
     }
     // Paksa iframe tetap play
     setTimeout(function() { if (isPlaying) ytCmd('playVideo', []); }, 300);
@@ -1485,11 +1496,16 @@ function resumeAudioCtx() {
 //  Jika Web Worker tidak tersedia
 // ═══════════════════════════════════════════
 var _legacyTimer = null;
+var _lastLegacyTick = 0;
 function startLegacyTimer() {
   if (_legacyTimer) return;
+  _lastLegacyTick = Date.now();
   _legacyTimer = setInterval(function() {
     if (!isPlaying) return;
-    simCur += 0.9;
+    var now = Date.now();
+    var elapsed = Math.max(0.1, Math.min(5, (now - _lastLegacyTick) / 1000));
+    _lastLegacyTick = now;
+    simCur += elapsed;
     if (simDur > 0 && simCur >= simDur - 0.5) {
       simCur = simDur;
       updateProgressUI();
@@ -1503,6 +1519,7 @@ function startLegacyTimer() {
 }
 function stopLegacyTimer() {
   if (_legacyTimer) { clearInterval(_legacyTimer); _legacyTimer = null; }
+  _lastLegacyTick = 0;
 }
 
 // ═══════════════════════════════════════════
