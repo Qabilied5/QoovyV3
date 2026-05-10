@@ -1765,8 +1765,7 @@ function getPrevShuffleIdx(){if(shufflePos>0) shufflePos--;return shuffleQueue[s
 function buildIframeSrc(videoId,autoplay){
   var origin=window.location.origin||'http://localhost';
   var auto=autoplay?1:0;
-  var muteParam = (autoplay && document.visibilityState === 'hidden') ? '&mute=1' : '';
-  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white' + muteParam;
+  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white';
 }
 function ytCmd(func,args){var iframe=document.getElementById('yt-iframe');if(!iframe||!iframe.contentWindow) return;try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}catch(e){}}
 
@@ -1778,13 +1777,17 @@ window.addEventListener('message',function(e){
       ytAPIReady=true;
       ytCmd('setVolume',[isMuted?0:volLevel]);
       if(_pendingPlay){
+        // If page is hidden, mute first to allow autoplay
+        if (document.visibilityState === 'hidden') {
+          ytCmd('mute', []);
+        }
         ytCmd('playVideo',[]);
         // Don't clear _pendingPlay immediately when page is hidden
         // Let the retry logic handle it
         if (document.visibilityState !== 'hidden') {
           _pendingPlay = false;
         } else {
-          // If we used muted autoplay for hidden page, unmute after starting
+          // If we muted for autoplay, unmute after starting
           setTimeout(function() {
             if (!isMuted) {
               ytCmd('unMute', []);
@@ -1963,10 +1966,13 @@ function playTrack(idx){
   setTimeout(function(){if(curIdx===idx) hideLdr();},6000);
   setTimeout(function(){
     if(curIdx===idx && _pendingPlay){
+      if (document.visibilityState === 'hidden') {
+        ytCmd('mute', []);
+      }
       ytCmd('playVideo',[]);
       if(simDur===0) { simDur=240; updateProgressUI(); }
     }
-  },1500);
+  }, document.visibilityState === 'hidden' ? 3000 : 1500);
   setTimeout(function(){
     if(curIdx===idx && _pendingPlay){
       ytCmd('playVideo',[]);
@@ -1976,12 +1982,14 @@ function playTrack(idx){
   // Additional retries for when page is hidden
   setTimeout(function(){
     if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
+      ytCmd('mute', []);
       ytCmd('playVideo',[]);
       console.log('[Qoovy] Hidden page play retry at 6s');
     }
   },6000);
   setTimeout(function(){
     if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
+      ytCmd('mute', []);
       ytCmd('playVideo',[]);
       console.log('[Qoovy] Hidden page play retry at 10s');
     }
@@ -1989,6 +1997,7 @@ function playTrack(idx){
   // Extra retry for track transitions when hidden
   setTimeout(function(){
     if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
+      ytCmd('mute', []);
       ytCmd('playVideo',[]);
       console.log('[Qoovy] Hidden page transition retry at 15s');
     }
