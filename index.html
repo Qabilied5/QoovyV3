@@ -1299,16 +1299,21 @@ function createKeepaliveWorker() {
   if (_keepaliveWorker) return;
 
   var workerCode = [
-    "var tickInterval = null;",
+    "var tickTimeout = null;",
     "var heartbeatInterval = null;",
+    "var lastTickTime = Date.now();",
     "function startTick() {",
-    "  if (tickInterval) return;",
-    "  tickInterval = setInterval(function() {",
-    "    self.postMessage({ type: 'TICK', ts: Date.now() });",
-    "  }, 500);",
+    "  if (tickTimeout) return;",
+    "  function doTick() {",
+    "    var now = Date.now();",
+    "    self.postMessage({ type: 'TICK', ts: now });",
+    "    lastTickTime = now;",
+    "    tickTimeout = setTimeout(doTick, 500);",
+    "  }",
+    "  doTick();",
     "}",
     "function stopTick() {",
-    "  if (tickInterval) { clearInterval(tickInterval); tickInterval = null; }",
+    "  if (tickTimeout) { clearTimeout(tickTimeout); tickTimeout = null; }",
     "}",
     "function startHeartbeat() {",
     "  if (heartbeatInterval) return;",
@@ -1364,7 +1369,10 @@ function createKeepaliveWorker() {
             if(!willContinue){ setPlayState(false); }
             handleTrackEnd();
           } else if (simDur > 0) {
-            updateProgressUI();
+            // Update progress more frequently when page is hidden
+            if (document.visibilityState === 'hidden' || _workerTickCount % 2 === 0) {
+              updateProgressUI();
+            }
           } else if (_trackLoadedAt > 0) {
             // Still waiting for duration but time passed, update UI anyway
             var timeSinceLoad = Date.now() - _trackLoadedAt;
@@ -1443,6 +1451,8 @@ document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible' && isPlaying) {
     requestWakeLock();
     resumeAudioCtx();
+    // Update progress immediately when becoming visible
+    updateProgressUI();
     // Pastikan iframe masih play setelah tab aktif kembali
     setTimeout(function() {
       if (isPlaying) {
@@ -1452,6 +1462,8 @@ document.addEventListener('visibilitychange', function() {
     }, 400);
   } else if (document.visibilityState === 'hidden') {
     resumeAudioCtx();
+    // Force immediate progress update when hiding
+    updateProgressUI();
     // Tampilkan status pill saat minimize (desktop)
     if (isPlaying && curIdx >= 0 && tracks[curIdx]) {
       showBgStatusPill(tracks[curIdx]);
@@ -1828,9 +1840,24 @@ function stopProgTimer(){
 function updateProgressUI(){
   if(simDur>0){
     var pct=Math.min(100,(simCur/simDur)*100);
-    document.getElementById('prog-fill').style.width=pct+'%';
-    document.getElementById('t-cur').textContent=fmt(simCur);
-    document.getElementById('t-dur').textContent=fmt(simDur);
+    var progFill = document.getElementById('prog-fill');
+    if (progFill) {
+      // Force DOM update by setting attribute and triggering reflow
+      progFill.style.width = pct+'%';
+      if (document.visibilityState === 'hidden') {
+        // When hidden, force multiple reflows to ensure update
+        progFill.offsetWidth;
+        progFill.offsetHeight;
+        // Also try setting the attribute directly
+        progFill.setAttribute('style', 'width: ' + pct + '%;');
+      } else {
+        progFill.offsetWidth;
+      }
+    }
+    var tCur = document.getElementById('t-cur');
+    if (tCur) tCur.textContent=fmt(simCur);
+    var tDur = document.getElementById('t-dur');
+    if (tDur) tDur.textContent=fmt(simDur);
   }
   if('mediaSession' in navigator&&simDur>0){
     try{navigator.mediaSession.setPositionState({duration:simDur,playbackRate:1,position:Math.min(simCur,simDur)});}catch(e){}
@@ -1950,6 +1977,8 @@ function setPlayState(state){
     initAudioKeepAlive();
     resumeAudioCtx();
     _pendingPlay = false;
+    // Ensure worker is running for progress updates
+    createKeepaliveWorker();
   }
   else { releaseWakeLock(); }
 }
