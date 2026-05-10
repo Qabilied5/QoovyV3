@@ -1471,6 +1471,11 @@ document.addEventListener('visibilitychange', function() {
         }
       }, 200);
     }
+    // If video was muted for hidden autoplay, unmute it now
+    if (!isMuted && isPlaying) {
+      ytCmd('unMute', []);
+      ytCmd('setVolume', [volLevel]);
+    }
   } else if (document.visibilityState === 'hidden') {
     resumeAudioCtx();
     // Force immediate progress update when hiding
@@ -1760,7 +1765,8 @@ function getPrevShuffleIdx(){if(shufflePos>0) shufflePos--;return shuffleQueue[s
 function buildIframeSrc(videoId,autoplay){
   var origin=window.location.origin||'http://localhost';
   var auto=autoplay?1:0;
-  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white';
+  var muteParam = (autoplay && document.visibilityState === 'hidden') ? '&mute=1' : '';
+  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white' + muteParam;
 }
 function ytCmd(func,args){var iframe=document.getElementById('yt-iframe');if(!iframe||!iframe.contentWindow) return;try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}catch(e){}}
 
@@ -1777,6 +1783,14 @@ window.addEventListener('message',function(e){
         // Let the retry logic handle it
         if (document.visibilityState !== 'hidden') {
           _pendingPlay = false;
+        } else {
+          // If we used muted autoplay for hidden page, unmute after starting
+          setTimeout(function() {
+            if (!isMuted) {
+              ytCmd('unMute', []);
+              ytCmd('setVolume', [volLevel]);
+            }
+          }, 1000);
         }
       }
       hideLdr();
@@ -1803,6 +1817,11 @@ function handleStateChange(state){
     if(isAdShowing) hideAdOverlay();
     requestWakeLock();
     _pendingPlay = false; // Clear pending play when video actually starts
+    // Ensure unmuting if it was muted for autoplay
+    if (!isMuted) {
+      ytCmd('unMute', []);
+      ytCmd('setVolume', [volLevel]);
+    }
   }
   else if(state===2){ setPlayState(false); releaseWakeLock(); }
   else if(state===0){
@@ -1967,6 +1986,13 @@ function playTrack(idx){
       console.log('[Qoovy] Hidden page play retry at 10s');
     }
   },10000);
+  // Extra retry for track transitions when hidden
+  setTimeout(function(){
+    if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
+      ytCmd('playVideo',[]);
+      console.log('[Qoovy] Hidden page transition retry at 15s');
+    }
+  },15000);
 }
 
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
