@@ -1448,18 +1448,29 @@ async function releaseWakeLock() {
 
 // Re-acquire wake lock saat visibility berubah (iOS membebaskannya)
 document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible' && isPlaying) {
-    requestWakeLock();
-    resumeAudioCtx();
-    // Update progress immediately when becoming visible
-    updateProgressUI();
-    // Pastikan iframe masih play setelah tab aktif kembali
-    setTimeout(function() {
-      if (isPlaying) {
-        ytCmd('playVideo', []);
-        hideBgStatusPill(); // Sembunyikan pill saat kembali
-      }
-    }, 400);
+  if (document.visibilityState === 'visible') {
+    if (isPlaying) {
+      requestWakeLock();
+      resumeAudioCtx();
+      // Update progress immediately when becoming visible
+      updateProgressUI();
+      // Pastikan iframe masih play setelah tab aktif kembali
+      setTimeout(function() {
+        if (isPlaying) {
+          ytCmd('playVideo', []);
+          hideBgStatusPill(); // Sembunyikan pill saat kembali
+        }
+      }, 400);
+    }
+    // If there's a pending play (autoplay failed when hidden), try again now
+    if (_pendingPlay) {
+      setTimeout(function() {
+        if (_pendingPlay) {
+          ytCmd('playVideo', []);
+          console.log('[Qoovy] Retrying autoplay after visibility change');
+        }
+      }, 200);
+    }
   } else if (document.visibilityState === 'hidden') {
     resumeAudioCtx();
     // Force immediate progress update when hiding
@@ -1469,7 +1480,7 @@ document.addEventListener('visibilitychange', function() {
       showBgStatusPill(tracks[curIdx]);
       createKeepaliveWorker();
     }
-    // Paksa iframe tetap play
+    // Paksa iframe tetap play - but this might not work due to autoplay policy
     setTimeout(function() { if (isPlaying) ytCmd('playVideo', []); }, 300);
   }
 });
@@ -1762,7 +1773,11 @@ window.addEventListener('message',function(e){
       ytCmd('setVolume',[isMuted?0:volLevel]);
       if(_pendingPlay){
         ytCmd('playVideo',[]);
-        _pendingPlay = false;
+        // Don't clear _pendingPlay immediately when page is hidden
+        // Let the retry logic handle it
+        if (document.visibilityState !== 'hidden') {
+          _pendingPlay = false;
+        }
       }
       hideLdr();
     }
@@ -1787,6 +1802,7 @@ function handleStateChange(state){
     setPlayState(true); hideLdr(); hideBgStatusPill();
     if(isAdShowing) hideAdOverlay();
     requestWakeLock();
+    _pendingPlay = false; // Clear pending play when video actually starts
   }
   else if(state===2){ setPlayState(false); releaseWakeLock(); }
   else if(state===0){
@@ -1938,6 +1954,19 @@ function playTrack(idx){
       console.log('[Qoovy] Force play retry at 4s');
     }
   },4000);
+  // Additional retries for when page is hidden
+  setTimeout(function(){
+    if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
+      ytCmd('playVideo',[]);
+      console.log('[Qoovy] Hidden page play retry at 6s');
+    }
+  },6000);
+  setTimeout(function(){
+    if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
+      ytCmd('playVideo',[]);
+      console.log('[Qoovy] Hidden page play retry at 10s');
+    }
+  },10000);
 }
 
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
