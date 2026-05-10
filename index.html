@@ -1552,6 +1552,7 @@ var adCountdownTimer = null;
 var adCountVal = 5;
 var isAdShowing = false;
 var ytAPIReady = false;
+var _pendingPlay = false;
 var infoRequestTimer = null;
 var adWatchTimer = null;
 var CORS_PROXIES = ['https://corsproxy.io/?url=','https://api.allorigins.win/get?url='];
@@ -1725,7 +1726,15 @@ window.addEventListener('message',function(e){
   if(!e.origin.includes('youtube')) return;
   try{
     var data=typeof e.data==='string'?JSON.parse(e.data):e.data;
-    if(data.event==='onReady'){ytAPIReady=true;ytCmd('setVolume',[isMuted?0:volLevel]);hideLdr();}
+    if(data.event==='onReady'){
+      ytAPIReady=true;
+      ytCmd('setVolume',[isMuted?0:volLevel]);
+      if(_pendingPlay){
+        ytCmd('playVideo',[]);
+        _pendingPlay = false;
+      }
+      hideLdr();
+    }
     if(data.event==='onStateChange') handleStateChange(data.info);
     if(data.event==='infoDelivery'&&data.info){
       if(data.info.currentTime!==undefined&&data.info.duration!==undefined){
@@ -1749,7 +1758,11 @@ function handleStateChange(state){
     requestWakeLock();
   }
   else if(state===2){ setPlayState(false); releaseWakeLock(); }
-  else if(state===0){ setPlayState(false); handleTrackEnd(); }
+  else if(state===0){
+    var willContinue = musicQueue.length>0 || repeatMode===2 || repeatMode===1 || (curIdx >= 0 && curIdx + 1 < tracks.length);
+    if(!willContinue){ setPlayState(false); }
+    handleTrackEnd();
+  }
   else if(state===3){ showLdr(); }
   else if(state===-1||state===5){ hideLdr(); }
 }
@@ -1837,7 +1850,8 @@ function playTrack(idx){
   if(idx<0||idx>=tracks.length) return;
   curIdx=idx;
   var t=tracks[idx];
-  simCur=0;simDur=0;ytAPIReady=false;isPlaying=false;
+  simCur=0;simDur=0;ytAPIReady=false;
+  _pendingPlay = true;
   hideAdOverlay();
 
   document.getElementById('idle-view').style.display='none';
@@ -1862,9 +1876,15 @@ function playTrack(idx){
 
   // ★ Update Media Session (widget notifikasi)
   updateMediaSession(t);
+  setPlayState(true);
 
   setTimeout(function(){if(curIdx===idx) hideLdr();},6000);
-  setTimeout(function(){if(curIdx===idx&&!isPlaying){setPlayState(true);if(simDur===0) simDur=240;}},4000);
+  setTimeout(function(){
+    if(curIdx===idx && _pendingPlay){
+      ytCmd('playVideo',[]);
+      if(simDur===0) simDur=240;
+    }
+  },2000);
 }
 
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
