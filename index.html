@@ -42,10 +42,15 @@
 
 <!-- ═══ APPLE SPLASH SCREENS ═══ -->
 <meta name="apple-mobile-web-app-capable" content="yes">
+<!-- iPhone 14 Pro Max -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
+<!-- iPhone 14 Pro -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
+<!-- iPhone 14 / 13 -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
+<!-- iPhone SE -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/icon-384.png">
+<!-- iPad -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/icon-512.png">
 
 <style>
@@ -73,6 +78,7 @@
   --glow-a: rgba(167,139,250,0.35);
   --glow-b: rgba(236,100,162,0.25);
 
+  /* Safe area insets for notch/dynamic island */
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
@@ -82,6 +88,7 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html {
   height: 100%;
+  /* Prevent iOS rubber-banding on PWA */
   overscroll-behavior: none;
 }
 body {
@@ -90,17 +97,22 @@ body {
   font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
   display: flex; flex-direction: column;
   height: 100%; min-height: 100%;
+  /* Account for notch/safe areas */
   padding-top: var(--sat);
   padding-left: var(--sal);
   padding-right: var(--sar);
   position: relative;
   overflow: hidden;
+  /* Prevent text selection accidental in PWA */
   -webkit-user-select: none;
   user-select: none;
+  /* Smooth scroll */
   -webkit-overflow-scrolling: touch;
 }
+/* Re-allow text selection in inputs */
 input, textarea { -webkit-user-select: text; user-select: text; }
 
+/* Window Controls Overlay (desktop PWA title bar) */
 @media (display-mode: window-controls-overlay) {
   header {
     padding-top: calc(env(titlebar-area-height, 36px) + 6px) !important;
@@ -109,6 +121,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .header-right, .logo-wrap { app-region: no-drag; }
 }
 
+/* Standalone mode tweaks */
 @media (display-mode: standalone) {
   body { padding-bottom: var(--sab); }
   .controls-zone {
@@ -187,6 +200,10 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   padding: 5px 12px; cursor: pointer; transition: all 0.2s;
 }
 .btn-update-now:hover { transform: scale(1.05); }
+
+/* ═══════════════════════════════ */
+/*  ALL ORIGINAL STYLES BELOW     */
+/* ═══════════════════════════════ */
 
 /* BG */
 .bg-scene { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
@@ -571,38 +588,6 @@ header {
 .pill-queue { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.15); color:var(--yellow); display:none; }
 .pill-queue.show { display:inline-flex; }
 
-/* ═══ BACKGROUND STATUS INDICATOR ═══ */
-/* Muncul saat app di-minimize / tab tidak aktif */
-.bg-status-pill {
-  position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-  z-index: 9999;
-  background: rgba(10,10,20,0.92);
-  border: 1px solid rgba(167,139,250,0.3);
-  border-radius: 50px;
-  padding: 7px 18px 7px 12px;
-  display: none; align-items: center; gap: 10px;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 20px rgba(167,139,250,0.15);
-  animation: pill-in 0.4s cubic-bezier(0.34,1.56,0.64,1);
-  pointer-events: none;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.bg-status-pill.show { display: flex; }
-@keyframes pill-in {
-  from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.9); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-}
-.bg-status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--green); box-shadow: 0 0 8px var(--green);
-  animation: pulse-green 1.2s ease-in-out infinite; flex-shrink: 0;
-}
-@keyframes pulse-green { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.6; transform:scale(0.85); } }
-.bg-status-text { color: var(--text); font-weight: 600; letter-spacing: 0.3px; }
-.bg-status-track { color: var(--muted); font-size: 11px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
-
 /* CONTROLS */
 .controls-zone {
   padding:12px 28px 20px;
@@ -811,13 +796,6 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 </style>
 </head>
 <body>
-
-<!-- ═══ BACKGROUND STATUS PILL (visible saat app diminimize, desktop) ═══ -->
-<div class="bg-status-pill" id="bg-status-pill">
-  <div class="bg-status-dot"></div>
-  <span class="bg-status-text">Qoovy Berjalan</span>
-  <span class="bg-status-track" id="bg-status-track">—</span>
-</div>
 
 <div class="bg-scene">
   <div class="orb orb-1"></div>
@@ -1148,25 +1126,41 @@ if ('serviceWorker' in navigator) {
       .then(function(reg) {
         swReg = reg;
         console.log('[Qoovy PWA] Service Worker registered:', reg.scope);
+
+        // Check for updates
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
           newWorker.addEventListener('statechange', function() {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New version available
               document.getElementById('update-bar').classList.add('show');
             }
           });
         });
       })
-      .catch(function(err) { console.warn('[Qoovy PWA] SW registration failed:', err); });
-    navigator.serviceWorker.addEventListener('controllerchange', function() { window.location.reload(); });
+      .catch(function(err) {
+        console.warn('[Qoovy PWA] SW registration failed:', err);
+      });
+
+    // Detect controller change (after update)
+    navigator.serviceWorker.addEventListener('controllerchange', function() {
+      window.location.reload();
+    });
   });
 }
 
+// ═══════════════════════════════════════════
+//  PWA INSTALL PROMPT (Android/Desktop Chrome)
+// ═══════════════════════════════════════════
 window.addEventListener('beforeinstallprompt', function(e) {
-  e.preventDefault(); deferredInstallPrompt = e;
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show install bar after 2s
   setTimeout(function() {
     var bar = document.getElementById('pwa-install-bar');
-    if (bar && !localStorage.getItem('qoovy_install_dismissed')) bar.classList.add('show');
+    if (bar && !localStorage.getItem('qoovy_install_dismissed')) {
+      bar.classList.add('show');
+    }
   }, 2000);
 });
 
@@ -1174,7 +1168,10 @@ document.getElementById('btn-pwa-install').addEventListener('click', function() 
   if (!deferredInstallPrompt) return;
   deferredInstallPrompt.prompt();
   deferredInstallPrompt.userChoice.then(function(choice) {
-    if (choice.outcome === 'accepted') { toast('Qoovy berhasil diinstall! 🎵'); document.getElementById('pwa-install-bar').classList.remove('show'); }
+    if (choice.outcome === 'accepted') {
+      toast('Qoovy berhasil diinstall! 🎵');
+      document.getElementById('pwa-install-bar').classList.remove('show');
+    }
     deferredInstallPrompt = null;
   });
 });
@@ -1186,387 +1183,86 @@ document.getElementById('btn-pwa-dismiss').addEventListener('click', function() 
 
 window.addEventListener('appinstalled', function() {
   document.getElementById('pwa-install-bar').classList.remove('show');
-  deferredInstallPrompt = null; toast('Qoovy terpasang di perangkat!');
+  deferredInstallPrompt = null;
+  toast('Qoovy terpasang di perangkat!');
 });
 
+// ═══════════════════════════════════════════
+//  UPDATE BUTTON
+// ═══════════════════════════════════════════
 document.getElementById('btn-update-now').addEventListener('click', function() {
-  if (swReg && swReg.waiting) swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
-  else window.location.reload();
+  if (swReg && swReg.waiting) {
+    swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    window.location.reload();
+  }
 });
 
+// ═══════════════════════════════════════════
+//  ONLINE / OFFLINE DETECTION
+// ═══════════════════════════════════════════
 function updateOnlineStatus() {
   var bar = document.getElementById('offline-bar');
-  if (navigator.onLine) bar.classList.remove('show');
-  else { bar.classList.add('show'); toast('Tidak ada koneksi — streaming tidak tersedia', 'err'); }
+  if (navigator.onLine) {
+    bar.classList.remove('show');
+  } else {
+    bar.classList.add('show');
+    toast('Tidak ada koneksi — streaming tidak tersedia', 'err');
+  }
 }
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
 // ═══════════════════════════════════════════
-//  ★ FITUR 1: MEDIA SESSION API
-//  Widget notifikasi lagu di lock screen / notification bar (mobile & desktop)
+//  MEDIA SESSION API (lock screen controls)
 // ═══════════════════════════════════════════
 function updateMediaSession(track) {
   if (!('mediaSession' in navigator)) return;
-
-  // Artwork: gunakan thumb YouTube + fallback icon
-  var artworkList = [];
-  if (track.thumb) {
-    // YouTube menyediakan berbagai resolusi
-    var vid = track.id;
-    artworkList = [
-      { src: 'https://i.ytimg.com/vi/' + vid + '/default.jpg',   sizes: '120x90',  type: 'image/jpeg' },
-      { src: 'https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg', sizes: '320x180', type: 'image/jpeg' },
-      { src: 'https://i.ytimg.com/vi/' + vid + '/hqdefault.jpg', sizes: '480x360', type: 'image/jpeg' },
-      { src: 'https://i.ytimg.com/vi/' + vid + '/maxresdefault.jpg', sizes: '1280x720', type: 'image/jpeg' },
-    ];
-  } else {
-    artworkList = [
-      { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-    ];
-  }
-
   navigator.mediaSession.metadata = new MediaMetadata({
-    title:  track.title || 'Qoovy',
-    artist: track.ch    || '',
-    album:  'Qoovy Music Streaming',
-    artwork: artworkList
+    title: track.title || 'Qoovy',
+    artist: track.ch || '',
+    album: 'Qoovy Music Streaming',
+    artwork: [
+      { src: track.thumb || 'icons/icon-96.png', sizes: '96x96', type: 'image/png' },
+      { src: track.thumb || 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ]
   });
-
-  // Action handlers — terhubung ke fungsi playback Qoovy
-  navigator.mediaSession.setActionHandler('play',          function() { if (!isPlaying) togglePlay(); });
-  navigator.mediaSession.setActionHandler('pause',         function() { if (isPlaying)  togglePlay(); });
+  navigator.mediaSession.setActionHandler('play', function() { togglePlay(); });
+  navigator.mediaSession.setActionHandler('pause', function() { togglePlay(); });
   navigator.mediaSession.setActionHandler('previoustrack', function() { prevTrack(); });
-  navigator.mediaSession.setActionHandler('nexttrack',     function() { nextTrack(); });
-  navigator.mediaSession.setActionHandler('stop',          function() { if (isPlaying) togglePlay(); });
-
-  // seekto — browser modern mendukung ini
-  try {
-    navigator.mediaSession.setActionHandler('seekto', function(details) {
-      if (details.seekTime !== undefined) {
-        simCur = details.seekTime;
-        ytCmd('seekTo', [details.seekTime, true]);
-        updateProgressUI();
-      }
-    });
-    navigator.mediaSession.setActionHandler('seekbackward', function(details) {
-      var skip = details.seekOffset || 10;
-      simCur = Math.max(0, simCur - skip);
-      ytCmd('seekTo', [simCur, true]);
+  navigator.mediaSession.setActionHandler('nexttrack', function() { nextTrack(); });
+  navigator.mediaSession.setActionHandler('seekto', function(details) {
+    if (details.seekTime !== undefined) {
+      simCur = details.seekTime;
+      ytCmd('seekTo', [details.seekTime, true]);
       updateProgressUI();
-    });
-    navigator.mediaSession.setActionHandler('seekforward', function(details) {
-      var skip = details.seekOffset || 10;
-      simCur = Math.min(simDur || 999, simCur + skip);
-      ytCmd('seekTo', [simCur, true]);
-      updateProgressUI();
-    });
-  } catch(e) {}
-
-  console.log('[Qoovy] MediaSession updated:', track.title);
+    }
+  });
 }
 
 function setMediaSessionPlayback(playing) {
   if (!('mediaSession' in navigator)) return;
   navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
-
-  // Update position state agar progress bar notifikasi akurat
-  if (simDur > 0) {
-    try {
-      navigator.mediaSession.setPositionState({
-        duration:     simDur,
-        playbackRate: 1,
-        position:     Math.min(simCur, simDur)
-      });
-    } catch(e) {}
-  }
 }
 
 // ═══════════════════════════════════════════
-//  ★ FITUR 2: WEB WORKER KEEPALIVE
-//  Background thread yang tetap berjalan meski browser di-minimize
-//  Worker tidak terpengaruh Page Visibility API — ideal untuk timer
-// ═══════════════════════════════════════════
-var _keepaliveWorker = null;
-var _workerTickCount  = 0;
-var _workerMissed     = 0;
-var _WORKER_BLOB_URL  = null;
-var _lastWorkerTickTs = 0;
-
-// Buat Worker dari Blob (tidak perlu file eksternal)
-function createKeepaliveWorker() {
-  if (_keepaliveWorker) return;
-
-  var workerCode = [
-    "var tickTimeout = null;",
-    "var heartbeatInterval = null;",
-    "var lastTickTime = Date.now();",
-    "function startTick() {",
-    "  if (tickTimeout) return;",
-    "  function doTick() {",
-    "    var now = Date.now();",
-    "    self.postMessage({ type: 'TICK', ts: now });",
-    "    lastTickTime = now;",
-    "    tickTimeout = setTimeout(doTick, 500);",
-    "  }",
-    "  doTick();",
-    "}",
-    "function stopTick() {",
-    "  if (tickTimeout) { clearTimeout(tickTimeout); tickTimeout = null; }",
-    "}",
-    "function startHeartbeat() {",
-    "  if (heartbeatInterval) return;",
-    "  heartbeatInterval = setInterval(function() {",
-    "    self.postMessage({ type: 'HEARTBEAT', ts: Date.now() });",
-    "  }, 20000);",
-    "}",
-    "self.addEventListener('message', function(e) {",
-    "  var msg = e.data; if (!msg) return;",
-    "  if (msg.type === 'START')  { startTick(); startHeartbeat(); self.postMessage({ type: 'WORKER_READY' }); }",
-    "  if (msg.type === 'STOP')   { stopTick(); if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; } }",
-    "  if (msg.type === 'PING')   { self.postMessage({ type: 'PONG', ts: Date.now() }); }",
-    "});",
-    "startTick(); startHeartbeat();"
-  ].join('\n');
-
-  try {
-    var blob = new Blob([workerCode], { type: 'application/javascript' });
-    _WORKER_BLOB_URL = URL.createObjectURL(blob);
-    _keepaliveWorker = new Worker(_WORKER_BLOB_URL);
-
-    _keepaliveWorker.onmessage = function(e) {
-      var msg = e.data;
-      if (msg.type === 'TICK') {
-        // Worker masih hidup — jalankan progress update jika sedang play
-        _workerTickCount++;
-        _workerMissed = 0;
-
-        var nowTs = msg.ts || Date.now();
-        var elapsed = 0.5;
-        if (_lastWorkerTickTs) {
-          elapsed = Math.max(0.1, Math.min(5, (nowTs - _lastWorkerTickTs) / 1000));
-        }
-        _lastWorkerTickTs = nowTs;
-
-        if (isPlaying) {
-          simCur += elapsed;
-          
-          // Fallback: if simDur is unknown but we've been playing for a while, estimate it
-          if (simDur === 0 && _trackLoadedAt > 0) {
-            var timeSinceLoad = Date.now() - _trackLoadedAt;
-            if (timeSinceLoad > 3000) {
-              // If no duration after 3s, estimate standard video length
-              simDur = 240;
-            }
-          }
-          
-          if (simDur > 0 && simCur >= simDur - 0.3) {
-            simCur = simDur;
-            updateProgressUI();
-            // Check if playback will continue before pausing
-            var willContinue = musicQueue.length>0 || repeatMode===2 || repeatMode===1 || (curIdx >= 0 && curIdx + 1 < tracks.length);
-            if(!willContinue){ setPlayState(false); }
-            handleTrackEnd();
-          } else if (simDur > 0) {
-            // Update progress more frequently when page is hidden
-            if (document.visibilityState === 'hidden' || _workerTickCount % 2 === 0) {
-              updateProgressUI();
-            }
-          } else if (_trackLoadedAt > 0) {
-            // Still waiting for duration but time passed, update UI anyway
-            var timeSinceLoad = Date.now() - _trackLoadedAt;
-            if (timeSinceLoad > 5000) {
-              updateProgressUI();
-            }
-          }
-          // Sync posisi ke MediaSession setiap 5 tick
-          if (_workerTickCount % 5 === 0) setMediaSessionPlayback(true);
-        }
-      }
-      if (msg.type === 'HEARTBEAT') {
-        // Keepalive ke SW
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({ type: 'KEEPALIVE', ts: Date.now() });
-        }
-        // Keepalive AudioContext
-        resumeAudioCtx();
-        console.log('[Qoovy Worker] Heartbeat — playing:', isPlaying, 'pos:', Math.floor(simCur));
-      }
-      if (msg.type === 'WORKER_READY') {
-        console.log('[Qoovy] Keepalive worker aktif');
-      }
-    };
-
-    _keepaliveWorker.onerror = function(e) {
-      console.warn('[Qoovy] Worker error:', e);
-      _keepaliveWorker = null;
-      // Fallback ke interval biasa
-      startLegacyTimer();
-    };
-
-    _keepaliveWorker.postMessage({ type: 'START' });
-    console.log('[Qoovy] Web Worker keepalive dibuat');
-
-  } catch(e) {
-    console.warn('[Qoovy] Worker tidak didukung, pakai fallback timer:', e);
-    startLegacyTimer();
-  }
-}
-
-function destroyKeepaliveWorker() {
-  if (_keepaliveWorker) {
-    _keepaliveWorker.postMessage({ type: 'STOP' });
-    _keepaliveWorker.terminate();
-    _keepaliveWorker = null;
-  }
-  _lastWorkerTickTs = 0;
-
-  if (_WORKER_BLOB_URL) {
-    URL.revokeObjectURL(_WORKER_BLOB_URL);
-    _WORKER_BLOB_URL = null;
-  }
-}
-
-// ═══════════════════════════════════════════
-//  WAKE LOCK API
-//  Cegah layar mati saat memutar
+//  PREVENT SLEEP (Wake Lock API)
 // ═══════════════════════════════════════════
 var wakeLock = null;
 async function requestWakeLock() {
   if (!('wakeLock' in navigator)) return;
   try {
-    if (wakeLock) return; // sudah aktif
     wakeLock = await navigator.wakeLock.request('screen');
     wakeLock.addEventListener('release', function() { wakeLock = null; });
-    console.log('[Qoovy] Wake lock aktif');
-  } catch(e) { console.warn('[Qoovy] Wake lock gagal:', e.message); }
+  } catch(e) {}
 }
 async function releaseWakeLock() {
   if (wakeLock) { try { await wakeLock.release(); } catch(e) {} wakeLock = null; }
 }
-
-// Re-acquire wake lock saat visibility berubah (iOS membebaskannya)
 document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState === 'visible') {
-    if (isPlaying) {
-      requestWakeLock();
-      resumeAudioCtx();
-      // Update progress immediately when becoming visible
-      updateProgressUI();
-      // Pastikan iframe masih play setelah tab aktif kembali
-      setTimeout(function() {
-        if (isPlaying) {
-          ytCmd('playVideo', []);
-          hideBgStatusPill(); // Sembunyikan pill saat kembali
-        }
-      }, 400);
-    }
-    // If there's a pending play (autoplay failed when hidden), try again now
-    if (_pendingPlay) {
-      setTimeout(function() {
-        if (_pendingPlay) {
-          ytCmd('playVideo', []);
-          console.log('[Qoovy] Retrying autoplay after visibility change');
-        }
-      }, 200);
-    }
-    // If video was muted for hidden autoplay, unmute it now
-    if (!isMuted && isPlaying) {
-      ytCmd('unMute', []);
-      ytCmd('setVolume', [volLevel]);
-    }
-  } else if (document.visibilityState === 'hidden') {
-    resumeAudioCtx();
-    // Force immediate progress update when hiding
-    updateProgressUI();
-    // Tampilkan status pill saat minimize (desktop)
-    if (isPlaying && curIdx >= 0 && tracks[curIdx]) {
-      showBgStatusPill(tracks[curIdx]);
-      createKeepaliveWorker();
-    }
-    // Paksa iframe tetap play - but this might not work due to autoplay policy
-    setTimeout(function() { if (isPlaying) ytCmd('playVideo', []); }, 300);
-  }
+  if (document.visibilityState === 'visible' && isPlaying) requestWakeLock();
+  else releaseWakeLock();
 });
-
-// ═══════════════════════════════════════════
-//  BACKGROUND STATUS PILL
-//  Indikator visual saat tab tidak aktif (desktop browser)
-// ═══════════════════════════════════════════
-function showBgStatusPill(track) {
-  var pill  = document.getElementById('bg-status-pill');
-  var track_ = document.getElementById('bg-status-track');
-  if (!pill) return;
-  if (track && track.title) track_.textContent = track.title.substring(0, 40) + (track.title.length > 40 ? '…' : '');
-  pill.classList.add('show');
-}
-function hideBgStatusPill() {
-  var pill = document.getElementById('bg-status-pill');
-  if (pill) pill.classList.remove('show');
-}
-
-// ═══════════════════════════════════════════
-//  AUDIO CONTEXT KEEPALIVE
-//  Mencegah browser suspend audio saat background
-// ═══════════════════════════════════════════
-var _audioCtx  = null;
-var _gainNode  = null;
-var _oscNode   = null;
-
-function initAudioKeepAlive() {
-  if (_audioCtx) return;
-  try {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    _gainNode = _audioCtx.createGain();
-    _gainNode.gain.setValueAtTime(0.0001, _audioCtx.currentTime); // hampir 0, tidak terdengar
-    _oscNode  = _audioCtx.createOscillator();
-    _oscNode.frequency.setValueAtTime(1, _audioCtx.currentTime); // 1 Hz — tidak terdengar
-    _oscNode.connect(_gainNode);
-    _gainNode.connect(_audioCtx.destination);
-    _oscNode.start();
-    console.log('[Qoovy] AudioContext keepalive aktif, state:', _audioCtx.state);
-  } catch(e) { console.warn('[Qoovy] AudioContext gagal:', e); }
-}
-
-function resumeAudioCtx() {
-  if (_audioCtx && _audioCtx.state === 'suspended') {
-    _audioCtx.resume().then(function() {
-      console.log('[Qoovy] AudioContext resumed');
-    }).catch(function() {});
-  }
-}
-
-// ═══════════════════════════════════════════
-//  LEGACY TIMER FALLBACK
-//  Jika Web Worker tidak tersedia
-// ═══════════════════════════════════════════
-var _legacyTimer = null;
-var _lastLegacyTick = 0;
-function startLegacyTimer() {
-  if (_legacyTimer) return;
-  _lastLegacyTick = Date.now();
-  _legacyTimer = setInterval(function() {
-    if (!isPlaying) return;
-    var now = Date.now();
-    var elapsed = Math.max(0.1, Math.min(5, (now - _lastLegacyTick) / 1000));
-    _lastLegacyTick = now;
-    simCur += elapsed;
-    if (simDur > 0 && simCur >= simDur - 0.5) {
-      simCur = simDur;
-      updateProgressUI();
-      clearInterval(_legacyTimer); _legacyTimer = null;
-      setPlayState(false);
-      handleTrackEnd();
-    } else {
-      updateProgressUI();
-    }
-  }, 900);
-}
-function stopLegacyTimer() {
-  if (_legacyTimer) { clearInterval(_legacyTimer); _legacyTimer = null; }
-  _lastLegacyTick = 0;
-}
 
 // ═══════════════════════════════════════════
 //  STORAGE KEYS
@@ -1582,7 +1278,7 @@ var tracks = [];
 var curIdx = -1;
 var isPlaying = false;
 var isShuffle = false;
-var repeatMode = 0;
+var repeatMode = 0; // 0=off, 1=all, 2=one
 var isMuted = false;
 var adBlockEnabled = true;
 var volLevel = 80;
@@ -1591,15 +1287,13 @@ var shufflePos = 0;
 var musicQueue = [];
 var searchHistory = [];
 var playHistory = [];
-var progTimer = null; // Masih ada untuk kompatibilitas, tapi Worker yang jalan
+var progTimer = null;
 var simCur = 0;
 var simDur = 0;
 var adCountdownTimer = null;
 var adCountVal = 5;
 var isAdShowing = false;
 var ytAPIReady = false;
-var _pendingPlay = false;
-var _trackLoadedAt = 0;
 var infoRequestTimer = null;
 var adWatchTimer = null;
 var CORS_PROXIES = ['https://corsproxy.io/?url=','https://api.allorigins.win/get?url='];
@@ -1634,10 +1328,10 @@ function switchTab(tab) {
 // ═══════════════════════════════════════════
 function toggleMobilePlaylist() {
   mobilePlaylistOpen = !mobilePlaylistOpen;
-  var sidebar   = document.getElementById('sidebar');
-  var overlay   = document.getElementById('mobile-sheet-overlay');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('mobile-sheet-overlay');
   var toggleBtn = document.getElementById('mobile-playlist-toggle');
-  var label     = document.getElementById('mob-toggle-label');
+  var label = document.getElementById('mob-toggle-label');
   if (mobilePlaylistOpen) {
     sidebar.classList.add('mobile-open'); overlay.classList.add('show');
     toggleBtn.classList.add('open'); label.textContent = 'Tutup';
@@ -1768,74 +1462,25 @@ function buildIframeSrc(videoId,autoplay){
   return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white';
 }
 function ytCmd(func,args){var iframe=document.getElementById('yt-iframe');if(!iframe||!iframe.contentWindow) return;try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}catch(e){}}
-
 window.addEventListener('message',function(e){
   if(!e.origin.includes('youtube')) return;
   try{
     var data=typeof e.data==='string'?JSON.parse(e.data):e.data;
-    if(data.event==='onReady'){
-      ytAPIReady=true;
-      ytCmd('setVolume',[isMuted?0:volLevel]);
-      if(_pendingPlay){
-        // If page is hidden, mute first to allow autoplay
-        if (document.visibilityState === 'hidden') {
-          ytCmd('mute', []);
-        }
-        ytCmd('playVideo',[]);
-        // Don't clear _pendingPlay immediately when page is hidden
-        // Let the retry logic handle it
-        if (document.visibilityState !== 'hidden') {
-          _pendingPlay = false;
-        } else {
-          // If we muted for autoplay, unmute after starting
-          setTimeout(function() {
-            if (!isMuted) {
-              ytCmd('unMute', []);
-              ytCmd('setVolume', [volLevel]);
-            }
-          }, 1000);
-        }
-      }
-      hideLdr();
-    }
+    if(data.event==='onReady'){ytAPIReady=true;ytCmd('setVolume',[isMuted?0:volLevel]);hideLdr();}
     if(data.event==='onStateChange') handleStateChange(data.info);
     if(data.event==='infoDelivery'&&data.info){
-      if(data.info.currentTime!==undefined&&data.info.duration!==undefined){
-        simCur=data.info.currentTime;
-        simDur=data.info.duration;
-        updateProgressUI();
-      }
-      if(adBlockEnabled&&data.info.videoData){
-        var playingId=data.info.videoData.video_id;
-        if(curIdx>=0&&tracks[curIdx]&&playingId&&playingId!==tracks[curIdx].id){if(!isAdShowing) triggerAdOverlay();}
-        else{if(isAdShowing) hideAdOverlay();}
-      }
+      if(data.info.currentTime!==undefined&&data.info.duration!==undefined){simCur=data.info.currentTime;simDur=data.info.duration;updateProgressUI();}
+      if(adBlockEnabled&&data.info.videoData){var playingId=data.info.videoData.video_id;if(curIdx>=0&&tracks[curIdx]&&playingId&&playingId!==tracks[curIdx].id){if(!isAdShowing) triggerAdOverlay();}else{if(isAdShowing) hideAdOverlay();}}
     }
   }catch(e2){}
 });
-
 function handleStateChange(state){
-  if(state===1){
-    setPlayState(true); hideLdr(); hideBgStatusPill();
-    if(isAdShowing) hideAdOverlay();
-    requestWakeLock();
-    _pendingPlay = false; // Clear pending play when video actually starts
-    // Ensure unmuting if it was muted for autoplay
-    if (!isMuted) {
-      ytCmd('unMute', []);
-      ytCmd('setVolume', [volLevel]);
-    }
-  }
-  else if(state===2){ setPlayState(false); releaseWakeLock(); }
-  else if(state===0){
-    var willContinue = musicQueue.length>0 || repeatMode===2 || repeatMode===1 || (curIdx >= 0 && curIdx + 1 < tracks.length);
-    if(!willContinue){ setPlayState(false); }
-    handleTrackEnd();
-  }
-  else if(state===3){ showLdr(); }
-  else if(state===-1||state===5){ hideLdr(); }
+  if(state===1){setPlayState(true);hideLdr();startProgTimer();if(isAdShowing) hideAdOverlay();setMediaSessionPlayback(true);requestWakeLock();}
+  else if(state===2){setPlayState(false);stopProgTimer();setMediaSessionPlayback(false);releaseWakeLock();}
+  else if(state===0){setPlayState(false);stopProgTimer();handleTrackEnd();}
+  else if(state===3){showLdr();}
+  else if(state===-1||state===5){hideLdr();}
 }
-
 function handleTrackEnd(){
   if(repeatMode===2){reloadCurrentTrack();return;}
   if(musicQueue.length>0){
@@ -1848,69 +1493,18 @@ function handleTrackEnd(){
   }
   nextTrack();
 }
-
-function startInfoRequests(){
-  stopInfoRequests();
-  infoRequestTimer=setInterval(function(){
-    ytCmd('getVideoData',[]);
-    var iframe=document.getElementById('yt-iframe');
-    if(iframe&&iframe.contentWindow){
-      try{iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*');}catch(e){}
-    }
-  },1500);
-}
+function startInfoRequests(){stopInfoRequests();infoRequestTimer=setInterval(function(){ytCmd('getVideoData',[]);var iframe=document.getElementById('yt-iframe');if(iframe&&iframe.contentWindow){try{iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*');}catch(e){}}},1500);}
 function stopInfoRequests(){if(infoRequestTimer){clearInterval(infoRequestTimer);infoRequestTimer=null;}}
 
 // ═══════════════════════════════════════════
-//  PROGRESS — Worker-driven
-//  startProgTimer / stopProgTimer masih ada untuk kompatibilitas
-//  tapi progress sesungguhnya digerakkan oleh Worker TICK
+//  PROGRESS
 // ═══════════════════════════════════════════
-function startProgTimer(){
-  // Worker yang akan drive progress
-  // Fungsi ini tetap ada untuk backward-compat tapi tidak buat interval baru
-  // (Worker sudah berjalan dari createKeepaliveWorker)
-}
-function stopProgTimer(){
-  // Worker tidak berhenti saat pause — hanya simCur yang tidak maju
-}
-
-function updateProgressUI(){
-  if(simDur>0){
-    var pct=Math.min(100,(simCur/simDur)*100);
-    var progFill = document.getElementById('prog-fill');
-    if (progFill) {
-      // Force DOM update by setting attribute and triggering reflow
-      progFill.style.width = pct+'%';
-      if (document.visibilityState === 'hidden') {
-        // When hidden, force multiple reflows to ensure update
-        progFill.offsetWidth;
-        progFill.offsetHeight;
-        // Also try setting the attribute directly
-        progFill.setAttribute('style', 'width: ' + pct + '%;');
-      } else {
-        progFill.offsetWidth;
-      }
-    }
-    var tCur = document.getElementById('t-cur');
-    if (tCur) tCur.textContent=fmt(simCur);
-    var tDur = document.getElementById('t-dur');
-    if (tDur) tDur.textContent=fmt(simDur);
-  }
-  if('mediaSession' in navigator&&simDur>0){
-    try{navigator.mediaSession.setPositionState({duration:simDur,playbackRate:1,position:Math.min(simCur,simDur)});}catch(e){}
-  }
-}
+var progLastUpdate=0;
+function startProgTimer(){stopProgTimer();progTimer=setInterval(function(){if(!isPlaying) return;simCur+=0.9;if(simDur>0&&simCur>=simDur-0.5){simCur=simDur;updateProgressUI();stopProgTimer();setPlayState(false);handleTrackEnd();return;}updateProgressUI();progLastUpdate++;if(progLastUpdate%5===0){var iframe=document.getElementById('yt-iframe');if(iframe&&iframe.contentWindow){try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:'getCurrentTime',args:[]}),'*');}catch(e){}}}},900);}
+function stopProgTimer(){if(progTimer){clearInterval(progTimer);progTimer=null;}}
+function updateProgressUI(){if(simDur>0){var pct=Math.min(100,(simCur/simDur)*100);document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('t-cur').textContent=fmt(simCur);document.getElementById('t-dur').textContent=fmt(simDur);}if('mediaSession' in navigator&&simDur>0){try{navigator.mediaSession.setPositionState({duration:simDur,playbackRate:1,position:simCur});}catch(e){}}}
 function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(('0'+(s%60)).slice(-2));}
-function seekTo(e){
-  var rect=document.getElementById('prog-track').getBoundingClientRect();
-  var clientX=e.touches?e.touches[0].clientX:e.clientX;
-  var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
-  var seekSec=pct*(simDur||300);
-  simCur=seekSec;
-  ytCmd('seekTo',[seekSec,true]);
-  updateProgressUI();
-}
+function seekTo(e){var rect=document.getElementById('prog-track').getBoundingClientRect();var clientX=e.touches?e.touches[0].clientX:e.clientX;var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));var seekSec=pct*(simDur||300);simCur=seekSec;ytCmd('seekTo',[seekSec,true]);updateProgressUI();}
 
 // ═══════════════════════════════════════════
 //  AD BLOCKER
@@ -1934,86 +1528,35 @@ function playTrack(idx){
   if(idx<0||idx>=tracks.length) return;
   curIdx=idx;
   var t=tracks[idx];
-  simCur=0;simDur=0;ytAPIReady=false;
-  _pendingPlay = true;
-  _trackLoadedAt = Date.now();
-  hideAdOverlay();
-
+  simCur=0;simDur=0;ytAPIReady=false;isPlaying=false;
+  stopProgTimer();hideAdOverlay();
   document.getElementById('idle-view').style.display='none';
   document.getElementById('player-view').style.display='block';
   document.getElementById('idle-disc').classList.add('spin');
   showLdr();
-
   var iframe=document.getElementById('yt-iframe');
   iframe.src=buildIframeSrc(t.id,true);
-
   document.getElementById('np-title').textContent=t.title;
   document.getElementById('np-ch').textContent=t.ch;
   document.getElementById('prog-fill').style.width='0%';
   document.getElementById('t-cur').textContent='0:00';
   document.getElementById('t-dur').textContent='0:00';
-
   addPlayHistory(t);
   renderTracks();
   scrollToTrack(idx);
   startInfoRequests();
   startAdWatch(t.id);
-
-  // ★ Update Media Session (widget notifikasi)
   updateMediaSession(t);
-  setPlayState(true);
-
   setTimeout(function(){if(curIdx===idx) hideLdr();},6000);
-  setTimeout(function(){
-    if(curIdx===idx && _pendingPlay){
-      if (document.visibilityState === 'hidden') {
-        ytCmd('mute', []);
-      }
-      ytCmd('playVideo',[]);
-      if(simDur===0) { simDur=240; updateProgressUI(); }
-    }
-  }, document.visibilityState === 'hidden' ? 3000 : 1500);
-  setTimeout(function(){
-    if(curIdx===idx && _pendingPlay){
-      ytCmd('playVideo',[]);
-      console.log('[Qoovy] Force play retry at 4s');
-    }
-  },4000);
-  // Additional retries for when page is hidden
-  setTimeout(function(){
-    if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
-      ytCmd('mute', []);
-      ytCmd('playVideo',[]);
-      console.log('[Qoovy] Hidden page play retry at 6s');
-    }
-  },6000);
-  setTimeout(function(){
-    if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
-      ytCmd('mute', []);
-      ytCmd('playVideo',[]);
-      console.log('[Qoovy] Hidden page play retry at 10s');
-    }
-  },10000);
-  // Extra retry for track transitions when hidden
-  setTimeout(function(){
-    if(curIdx===idx && _pendingPlay && document.visibilityState === 'hidden'){
-      ytCmd('mute', []);
-      ytCmd('playVideo',[]);
-      console.log('[Qoovy] Hidden page transition retry at 15s');
-    }
-  },15000);
+  setTimeout(function(){if(curIdx===idx&&!isPlaying){setPlayState(true);if(simDur===0) simDur=240;startProgTimer();}},4000);
 }
-
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
-
 function togglePlay(){
   if(curIdx<0){if(tracks.length>0) playTrack(0);return;}
-  if(isPlaying){ytCmd('pauseVideo',[]);setPlayState(false);}
-  else{ytCmd('playVideo',[]);setPlayState(true);}
+  if(isPlaying){ytCmd('pauseVideo',[]);setPlayState(false);stopProgTimer();}
+  else{ytCmd('playVideo',[]);setPlayState(true);startProgTimer();}
 }
-
 function prevTrack(){if(!tracks.length) return;var idx;if(isShuffle){idx=getPrevShuffleIdx();}else{idx=(curIdx-1+tracks.length)%tracks.length;}playTrack(idx);}
-
 function nextTrack(){
   if(!tracks.length) return;
   if(musicQueue.length>0){
@@ -2025,29 +1568,18 @@ function nextTrack(){
   }
   var idx;
   if(isShuffle){idx=getNextShuffleIdx();}
-  else{if(repeatMode===1){idx=(curIdx+1)%tracks.length;}else{idx=curIdx+1;if(idx>=tracks.length){toast('Playlist selesai');setPlayState(false);return;}}}
+  else{if(repeatMode===1){idx=(curIdx+1)%tracks.length;}else{idx=curIdx+1;if(idx>=tracks.length){toast('Playlist selesai');setPlayState(false);stopProgTimer();return;}}}
   playTrack(idx);
 }
-
 function setPlayState(state){
   isPlaying=state;
   document.getElementById('ico-play').style.display=state?'none':'block';
   document.getElementById('ico-pause').style.display=state?'block':'none';
   var disc=document.getElementById('idle-disc');
-  if(state) disc.classList.add('spin'); else disc.classList.remove('spin');
+  if(state) disc.classList.add('spin');else disc.classList.remove('spin');
   setMediaSessionPlayback(state);
-  if(state){
-    requestWakeLock();
-    initAudioKeepAlive();
-    resumeAudioCtx();
-    _pendingPlay = false;
-    // Ensure worker is running for progress updates
-    createKeepaliveWorker();
-  }
-  else { releaseWakeLock(); }
 }
-
-function toggleShuffle(){isShuffle=!isShuffle;document.getElementById('btn-shuf').classList.toggle('lit',isShuffle);if(isShuffle){buildShuffleQueue(curIdx);toast('Acak: ON');}else{shuffleQueue=[];shufflePos=0;toast('Acak: OFF');}}
+function toggleShuffle(){isShuffle=!isShuffle;document.getElementById('btn-shuf').classList.toggle('lit',isShuffle);if(isShuffle){buildShuffleQueue(curIdx);toast('Acak: ON — urutan baru diacak');}else{shuffleQueue=[];shufflePos=0;toast('Acak: OFF');}}
 function toggleRepeat(){repeatMode=(repeatMode+1)%3;var btn=document.getElementById('btn-rep');btn.classList.remove('lit','repeat-one','lit-yellow');if(repeatMode===0){toast('Ulangi: OFF');}else if(repeatMode===1){btn.classList.add('lit');toast('Ulangi: Semua');}else if(repeatMode===2){btn.classList.add('lit','repeat-one');toast('Ulangi: Satu lagu');}}
 function onVolSlider(v){volLevel=Number(v);if(!isMuted) ytCmd('setVolume',[volLevel]);}
 function toggleMute(){isMuted=!isMuted;if(isMuted) ytCmd('mute',[]);else{ytCmd('unMute',[]);ytCmd('setVolume',[volLevel]);}document.getElementById('ico-vol').style.display=isMuted?'none':'block';document.getElementById('ico-mute').style.display=isMuted?'block':'none';}
@@ -2169,41 +1701,14 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 
 // ═══════════════════════════════════════════
-//  FIRST-INTERACTION HANDLERS
-//  AudioContext perlu dibuat dari gesture pengguna
-// ═══════════════════════════════════════════
-document.addEventListener('click', function initOnFirstInteraction() {
-  initAudioKeepAlive();
-  resumeAudioCtx();
-  document.removeEventListener('click', initOnFirstInteraction);
-}, { once: true });
-
-document.addEventListener('touchstart', function initOnFirstTouch() {
-  initAudioKeepAlive();
-  resumeAudioCtx();
-  document.removeEventListener('touchstart', initOnFirstTouch);
-}, { once: true });
-
-// ═══════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════
-window.addEventListener('load', function() {
+window.addEventListener('load',function(){
   loadFromStorage();
   showDemoPlaylist('demo');
   renderHistoryList();
   renderQueueList();
-
-  // ★ Buat keepalive worker — berjalan di thread terpisah, tidak terpengaruh minimize
-  createKeepaliveWorker();
-
-  setTimeout(function(){ openModal(true); }, 500);
-});
-
-// Cleanup saat halaman ditutup
-window.addEventListener('beforeunload', function() {
-  destroyKeepaliveWorker();
-  stopAdWatch();
-  stopInfoRequests();
+  setTimeout(function(){openModal(true);},500);
 });
 </script>
 </body>
