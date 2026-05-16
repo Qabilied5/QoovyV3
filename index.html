@@ -1303,6 +1303,7 @@ var LS_PLAY_HIST   = 'qoovy_play_history';
 var API_KEY = '';
 var tracks = [];
 var curIdx = -1;
+var currentTrack = null; // Simpan track yang sedang diplay (independent dari tracks array)
 var isPlaying = false;
 var isShuffle = false;
 var repeatMode = 0; // 0=off, 1=all, 2=one
@@ -1555,6 +1556,7 @@ function playTrack(idx){
   if(idx<0||idx>=tracks.length) return;
   curIdx=idx;
   var t=tracks[idx];
+  currentTrack=t; // Simpan track yang sedang diplay
   simCur=0;simDur=0;ytAPIReady=false;isPlaying=false;
   stopProgTimer();hideAdOverlay();
   document.getElementById('idle-view').style.display='none';
@@ -1580,11 +1582,15 @@ function playTrack(idx){
 }
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
 function refreshCurrentSong(){
-  if(curIdx<0){toast('Tidak ada lagu yang sedang diputar','warn');return;}
-  reloadCurrentTrack();
+  if(!currentTrack){toast('Tidak ada lagu yang sedang diputar','warn');return;}
+  simCur=0;
+  var iframe=document.getElementById('yt-iframe');
+  iframe.src=buildIframeSrc(currentTrack.id,true);
+  showLdr();
+  hideAdOverlay();
   setPlayState(true);
   startProgTimer();
-  setTimeout(function(){if(curIdx>=0) hideLdr();},6000);
+  setTimeout(function(){if(currentTrack) hideLdr();},6000);
   toast('Melakukan refresh lagu...');
 }
 function togglePlay(){
