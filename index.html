@@ -1538,7 +1538,17 @@ function seekTo(e){var rect=document.getElementById('prog-track').getBoundingCli
 //  AD BLOCKER
 // ═══════════════════════════════════════════
 function triggerAdOverlay(){if(!adBlockEnabled) return;isAdShowing=true;document.getElementById('ad-overlay').classList.add('show');adCountVal=5;document.getElementById('ad-countdown').textContent=adCountVal;clearInterval(adCountdownTimer);adCountdownTimer=setInterval(function(){adCountVal--;document.getElementById('ad-countdown').textContent=adCountVal;if(adCountVal<=0){clearInterval(adCountdownTimer);skipAdNow();}},1000);}
-function skipAdNow(){clearInterval(adCountdownTimer);ytCmd('playVideo',[]);ytCmd('seekTo',[9999,true]);setTimeout(function(){if(isAdShowing&&curIdx>=0) reloadCurrentTrack();},800);}
+function skipAdNow(){
+  clearInterval(adCountdownTimer);
+  if(!currentTrack){hideAdOverlay();return;}
+  simCur=0;
+  var iframe=document.getElementById('yt-iframe');
+  iframe.src=buildIframeSrc(currentTrack.id,true);
+  hideAdOverlay();
+  setPlayState(true);
+  startProgTimer();
+  toast('Melewati iklan, melanjutkan lagu...');
+}
 function hideAdOverlay(){isAdShowing=false;clearInterval(adCountdownTimer);document.getElementById('ad-overlay').classList.remove('show');}
 function toggleAdBlock(){
   adBlockEnabled=!adBlockEnabled;
