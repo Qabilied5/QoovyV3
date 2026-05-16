@@ -561,6 +561,26 @@ header {
 }
 .btn-skip-now:hover { transform:scale(1.05); }
 
+/* REFRESH BUTTON */
+.btn-refresh-song {
+  position:absolute; top:12px; right:12px; z-index:15;
+  background:rgba(167,139,250,0.15); border:1px solid rgba(167,139,250,0.3);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  border-radius:10px; color:var(--accent);
+  font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+  padding:8px 14px; cursor:pointer; transition:all 0.2s;
+  display:none; align-items:center; gap:6px;
+}
+.btn-refresh-song.show { display:flex; }
+.btn-refresh-song:hover { 
+  background:rgba(167,139,250,0.25); 
+  border-color:rgba(167,139,250,0.5);
+  box-shadow:0 0 16px rgba(167,139,250,0.2);
+  transform:scale(1.05);
+}
+.btn-refresh-song:active { transform:scale(0.98); }
+.btn-refresh-song svg { width:13px; height:13px; flex-shrink:0; }
+
 /* VIDEO LOADING */
 .vid-loading { display:none; position:absolute; inset:0; background:rgba(8,8,16,0.7); align-items:center; justify-content:center; border-radius:18px; z-index:10; backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
 .vid-loading.show { display:flex; }
@@ -962,6 +982,13 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
 
       <div class="player-view" id="player-view">
         <div class="video-glass-wrap">
+          <button class="btn-refresh-song" id="btn-refresh-song" onclick="refreshCurrentSong()" title="Refresh Lagu (Jika ada iklan yang lolos)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"/>
+            </svg>
+            Refresh
+          </button>
           <iframe id="yt-iframe" allowfullscreen allow="autoplay; encrypted-media"></iframe>
           <div class="video-shimmer"></div>
           <div class="vid-loading" id="vid-loading"><div class="spinner"></div></div>
@@ -1532,6 +1559,7 @@ function playTrack(idx){
   stopProgTimer();hideAdOverlay();
   document.getElementById('idle-view').style.display='none';
   document.getElementById('player-view').style.display='block';
+  document.getElementById('btn-refresh-song').classList.add('show');
   document.getElementById('idle-disc').classList.add('spin');
   showLdr();
   var iframe=document.getElementById('yt-iframe');
@@ -1551,6 +1579,14 @@ function playTrack(idx){
   setTimeout(function(){if(curIdx===idx&&!isPlaying){setPlayState(true);if(simDur===0) simDur=240;startProgTimer();}},4000);
 }
 function reloadCurrentTrack(){if(curIdx<0) return;simCur=0;var iframe=document.getElementById('yt-iframe');iframe.src=buildIframeSrc(tracks[curIdx].id,true);showLdr();hideAdOverlay();}
+function refreshCurrentSong(){
+  if(curIdx<0){toast('Tidak ada lagu yang sedang diputar','warn');return;}
+  reloadCurrentTrack();
+  setPlayState(true);
+  startProgTimer();
+  setTimeout(function(){if(curIdx>=0) hideLdr();},6000);
+  toast('Melakukan refresh lagu...');
+}
 function togglePlay(){
   if(curIdx<0){if(tracks.length>0) playTrack(0);return;}
   if(isPlaying){ytCmd('pauseVideo',[]);setPlayState(false);stopProgTimer();}
