@@ -553,13 +553,6 @@ header {
 .ad-title { font-size:15px; font-weight:800; color:var(--green); letter-spacing:2px; text-transform:uppercase; }
 .ad-sub { font-size:12px; color:var(--muted); }
 .ad-countdown { font-size:28px; font-weight:900; color:var(--text); font-family:'Courier New',monospace; }
-.btn-skip-now {
-  background:linear-gradient(135deg, var(--green), #22c55e);
-  border:none; border-radius:10px; color:#000;
-  font-size:12px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
-  padding:10px 20px; cursor:pointer; transition:all 0.2s;
-}
-.btn-skip-now:hover { transform:scale(1.05); }
 
 /* REFRESH BUTTON */
 .btn-refresh-song {
@@ -1002,7 +995,6 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
             <div class="ad-title">Iklan Diblokir</div>
             <div class="ad-sub">Melewati iklan secara otomatis...</div>
             <div class="ad-countdown" id="ad-countdown">5</div>
-            <button class="btn-skip-now" onclick="skipAdNow()">Lewati Sekarang</button>
           </div>
         </div>
         <div class="now-playing-info">
@@ -1537,18 +1529,8 @@ function seekTo(e){var rect=document.getElementById('prog-track').getBoundingCli
 // ═══════════════════════════════════════════
 //  AD BLOCKER
 // ═══════════════════════════════════════════
-function triggerAdOverlay(){if(!adBlockEnabled) return;isAdShowing=true;document.getElementById('ad-overlay').classList.add('show');adCountVal=5;document.getElementById('ad-countdown').textContent=adCountVal;clearInterval(adCountdownTimer);adCountdownTimer=setInterval(function(){adCountVal--;document.getElementById('ad-countdown').textContent=adCountVal;if(adCountVal<=0){clearInterval(adCountdownTimer);skipAdNow();}},1000);}
-function skipAdNow(){
-  clearInterval(adCountdownTimer);
-  if(!currentTrack){hideAdOverlay();return;}
-  simCur=0;
-  var iframe=document.getElementById('yt-iframe');
-  iframe.src=buildIframeSrc(currentTrack.id,true);
-  hideAdOverlay();
-  setPlayState(true);
-  startProgTimer();
-  toast('Melewati iklan, melanjutkan lagu...');
-}
+function triggerAdOverlay(){if(!adBlockEnabled) return;isAdShowing=true;document.getElementById('ad-overlay').classList.add('show');adCountVal=5;document.getElementById('ad-countdown').textContent=adCountVal;clearInterval(adCountdownTimer);adCountdownTimer=setInterval(function(){adCountVal--;document.getElementById('ad-countdown').textContent=adCountVal;if(adCountVal<=0){clearInterval(adCountdownTimer);hideAdOverlay();}},1000);}
+
 function hideAdOverlay(){isAdShowing=false;clearInterval(adCountdownTimer);document.getElementById('ad-overlay').classList.remove('show');}
 function toggleAdBlock(){
   adBlockEnabled=!adBlockEnabled;

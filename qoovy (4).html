@@ -372,13 +372,6 @@ header {
 .ad-countdown { font-size:28px; font-weight:900; color:var(--text); font-family:'Courier New',monospace; }
 .ad-progress-bar { width:160px; height:3px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
 .ad-progress-fill { height:100%; background:linear-gradient(90deg, var(--green), var(--accent3)); border-radius:3px; width:0%; transition:width 0.4s linear; }
-.btn-skip-now {
-  background:linear-gradient(135deg, var(--accent), var(--accent2));
-  border:none; border-radius:10px; color:#fff;
-  font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase;
-  padding:8px 20px; cursor:pointer; transition:all 0.2s;
-}
-.btn-skip-now:hover { transform:scale(1.05); }
 .ad-block-status {
   position:absolute; bottom:10px; left:12px; z-index:15;
   background:rgba(74,222,128,0.12); border:1px solid rgba(74,222,128,0.25);
@@ -825,7 +818,6 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
             <div class="ad-sub" id="ad-sub">Menyiapkan lagu untukmu...</div>
             <div class="ad-progress-bar"><div class="ad-progress-fill" id="ad-progress-fill"></div></div>
             <div class="ad-countdown" id="ad-countdown" style="display:none">3</div>
-            <button class="btn-skip-now" id="btn-skip-now" onclick="skipAdNow()" style="display:none">Lewati Sekarang</button>
           </div>
           <div class="ad-block-status" id="ad-block-status">
             <div class="ad-block-status-dot"></div>
@@ -1194,13 +1186,11 @@ var ADBLOCK = {
     var phaseEl = document.getElementById('ad-phase');
     var subEl = document.getElementById('ad-sub');
     var cdEl = document.getElementById('ad-countdown');
-    var skipBtn = document.getElementById('btn-skip-now');
     if (shieldEl) shieldEl.classList.remove('warn');
     if (titleEl) { titleEl.textContent = 'Shield Aktif'; titleEl.classList.remove('warn'); }
     if (phaseEl) phaseEl.textContent = 'MEMUAT KONTEN';
     if (subEl) subEl.textContent = 'Menyiapkan lagu untukmu...';
     if (cdEl) cdEl.style.display = 'none';
-    if (skipBtn) skipBtn.style.display = 'none';
     this._setProgress(0);
     if (overlay) overlay.classList.add('show');
   },
@@ -1212,7 +1202,6 @@ var ADBLOCK = {
     var phaseEl = document.getElementById('ad-phase');
     var subEl = document.getElementById('ad-sub');
     var cdEl = document.getElementById('ad-countdown');
-    var skipBtn = document.getElementById('btn-skip-now');
     if (shieldEl) shieldEl.classList.add('warn');
     if (titleEl) { titleEl.textContent = phase; titleEl.classList.add('warn'); }
     if (phaseEl) phaseEl.textContent = 'IKLAN TERDETEKSI';
@@ -1259,7 +1248,7 @@ var ADBLOCK = {
   }
 };
 
-function skipAdNow() { ADBLOCK.forceSkip(); }
+
 
 function updateAdCount() {
   var el = document.getElementById('pill-adblock-count');
