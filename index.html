@@ -1584,7 +1584,7 @@ function getPrevShuffleIdx(){if(shufflePos>0) shufflePos--;return shuffleQueue[s
 function buildIframeSrc(videoId,autoplay){
   var origin=window.location.origin||'http://localhost';
   var auto=autoplay?1:0;
-  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white';
+  return 'https://www.youtube-nocookie.com/embed/'+videoId+'?autoplay='+auto+'&enablejsapi=1&controls=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1&cc_load_policy=0&origin='+encodeURIComponent(origin)+'&fs=0&hl=id&color=white&disablekb=1&widget_referrer='+encodeURIComponent(origin)+'&host=https://www.youtube-nocookie.com';
 }
 function ytCmd(func,args){var iframe=document.getElementById('yt-iframe');if(!iframe||!iframe.contentWindow) return;try{iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:func,args:args||[]}),'*');}catch(e){}}
 window.addEventListener('message',function(e){
@@ -1619,7 +1619,7 @@ function handleTrackEnd(){
   }
   nextTrack();
 }
-function startInfoRequests(){stopInfoRequests();infoRequestTimer=setInterval(function(){ytCmd('getVideoData',[]);var iframe=document.getElementById('yt-iframe');if(iframe&&iframe.contentWindow){try{iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*');}catch(e){}}},1500);}
+function startInfoRequests(){stopInfoRequests();infoRequestTimer=setInterval(function(){ytCmd('getVideoData',[]);var iframe=document.getElementById('yt-iframe');if(iframe&&iframe.contentWindow){try{iframe.contentWindow.postMessage(JSON.stringify({event:'listening',id:1,channel:'widget'}),'*');}catch(e){}}},500);}
 function stopInfoRequests(){if(infoRequestTimer){clearInterval(infoRequestTimer);infoRequestTimer=null;}}
 
 // ═══════════════════════════════════════════
@@ -1633,18 +1633,263 @@ function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(('0'+(s
 function seekTo(e){var rect=document.getElementById('prog-track').getBoundingClientRect();var clientX=e.touches?e.touches[0].clientX:e.clientX;var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));var seekSec=pct*(simDur||300);simCur=seekSec;ytCmd('seekTo',[seekSec,true]);updateProgressUI();}
 
 // ═══════════════════════════════════════════
-//  AD BLOCKER
+//  EXTREME AD BLOCKER — MULTI-LAYER v3
 // ═══════════════════════════════════════════
-function triggerAdOverlay(){if(!adBlockEnabled) return;isAdShowing=true;document.getElementById('ad-overlay').classList.add('show');adCountVal=5;document.getElementById('ad-countdown').textContent=adCountVal;clearInterval(adCountdownTimer);adCountdownTimer=setInterval(function(){adCountVal--;document.getElementById('ad-countdown').textContent=adCountVal;if(adCountVal<=0){clearInterval(adCountdownTimer);hideAdOverlay();}},1000);}
 
-function hideAdOverlay(){isAdShowing=false;clearInterval(adCountdownTimer);document.getElementById('ad-overlay').classList.remove('show');}
-function toggleAdBlock(){
-  adBlockEnabled=!adBlockEnabled;
-  var badge=document.getElementById('adb-badge');var lbl=document.getElementById('adb-label');var pill=document.getElementById('pill-adblock');
-  if(adBlockEnabled){badge.classList.remove('off');lbl.textContent='AD-FREE ON';pill.classList.remove('off');pill.textContent='AdBlock ON';toast('AdBlock aktif');}
-  else{badge.classList.add('off');lbl.textContent='AD-FREE OFF';pill.classList.add('off');pill.textContent='AdBlock OFF';if(isAdShowing) hideAdOverlay();toast('AdBlock dimatikan');}
+// Layer 1: Known YouTube ad video IDs & patterns cache
+var adVideoCache = {};
+var adSkipAttempts = 0;
+var adDetectTimer = null;
+var adMutedForAd = false;
+var adBlockStats = { blocked: 0, skipped: 0, muted: 0 };
+var lastKnownVideoId = null;
+var adDomObserver = null;
+
+// Layer 2: Ad URL/domain blocklist patterns
+var AD_PATTERNS = [
+  'doubleclick','googlesyndication','googleadservices','adservice',
+  'ad.youtube','pagead','adsense','tracking','analytics.google',
+  'youtube.com/api/stats/ads','s.youtube.com/api/stats/ads',
+  'youtubei.googleapis.com/youtubei/v1/log_event'
+];
+
+// Layer 3: Intercept XHR/fetch for ad requests (runs in main frame)
+(function patchNetworkRequests() {
+  var origFetch = window.fetch;
+  window.fetch = function(url) {
+    var u = String(typeof url === 'object' ? (url.url || '') : url);
+    for (var i = 0; i < AD_PATTERNS.length; i++) {
+      if (u.indexOf(AD_PATTERNS[i]) !== -1) {
+        return Promise.resolve(new Response('{}', { status: 200 }));
+      }
+    }
+    return origFetch.apply(this, arguments);
+  };
+  var origOpen = XMLHttpRequest.prototype.open;
+  XMLHttpRequest.prototype.open = function(method, url) {
+    var u = String(url || '');
+    for (var i = 0; i < AD_PATTERNS.length; i++) {
+      if (u.indexOf(AD_PATTERNS[i]) !== -1) {
+        this._blocked = true;
+        return;
+      }
+    }
+    return origOpen.apply(this, arguments);
+  };
+  var origSend = XMLHttpRequest.prototype.send;
+  XMLHttpRequest.prototype.send = function() {
+    if (this._blocked) return;
+    return origSend.apply(this, arguments);
+  };
+})();
+
+// Layer 4: Mute + skip ad immediately when ad state detected
+function muteForAd() {
+  if (!adMutedForAd) {
+    adMutedForAd = true;
+    ytCmd('mute', []);
+    adBlockStats.muted++;
+  }
 }
-function startAdWatch(videoId){stopAdWatch();if(!adBlockEnabled) return;var checks=0;adWatchTimer=setInterval(function(){checks++;if(checks===2&&adBlockEnabled&&!isPlaying){ytCmd('cancelPlayback',[]);setTimeout(function(){if(curIdx>=0&&!isPlaying) reloadCurrentTrack();},500);}if(checks>6) stopAdWatch();},2000);}
+function unmuteAfterAd() {
+  if (adMutedForAd) {
+    adMutedForAd = false;
+    if (!isMuted) { ytCmd('unMute', []); ytCmd('setVolume', [volLevel]); }
+  }
+}
+
+// Layer 5: Detect & skip ad via video ID mismatch + state
+function isAdVideoId(vid) {
+  if (!vid || !curIdx < 0 || !tracks[curIdx]) return false;
+  return vid !== tracks[curIdx].id;
+}
+
+function triggerAdOverlay() {
+  if (!adBlockEnabled) return;
+  isAdShowing = true;
+  adBlockStats.blocked++;
+  // INSTANT skip attempt: seek iframe to end, mute, then reload
+  muteForAd();
+  ytCmd('seekTo', [9999, true]);          // skip to end
+  ytCmd('stopVideo', []);
+  document.getElementById('ad-overlay').classList.add('show');
+  adCountVal = 3; // shorter countdown since we aggressively skip
+  document.getElementById('ad-countdown').textContent = adCountVal;
+  clearInterval(adCountdownTimer);
+  adCountdownTimer = setInterval(function() {
+    adCountVal--;
+    document.getElementById('ad-countdown').textContent = adCountVal;
+    if (adCountVal <= 0) {
+      clearInterval(adCountdownTimer);
+      hideAdOverlay();
+      // Force reload original track
+      if (curIdx >= 0) reloadCurrentTrack();
+    }
+  }, 800); // faster ticks
+}
+
+function hideAdOverlay() {
+  isAdShowing = false;
+  clearInterval(adCountdownTimer);
+  document.getElementById('ad-overlay').classList.remove('show');
+  unmuteAfterAd();
+  adSkipAttempts = 0;
+}
+
+function toggleAdBlock() {
+  adBlockEnabled = !adBlockEnabled;
+  var badge = document.getElementById('adb-badge');
+  var lbl = document.getElementById('adb-label');
+  var pill = document.getElementById('pill-adblock');
+  if (adBlockEnabled) {
+    badge.classList.remove('off'); lbl.textContent = 'AD-FREE ON';
+    pill.classList.remove('off'); pill.textContent = 'AdBlock ON';
+    toast('AdBlock EXTREME aktif 🛡️');
+    startGlobalAdDetect();
+  } else {
+    badge.classList.add('off'); lbl.textContent = 'AD-FREE OFF';
+    pill.classList.add('off'); pill.textContent = 'AdBlock OFF';
+    if (isAdShowing) hideAdOverlay();
+    unmuteAfterAd();
+    stopGlobalAdDetect();
+    toast('AdBlock dimatikan');
+  }
+}
+
+// Layer 6: Aggressive periodic global ad detector
+function startGlobalAdDetect() {
+  stopGlobalAdDetect();
+  adDetectTimer = setInterval(function() {
+    if (!adBlockEnabled) return;
+    var iframe = document.getElementById('yt-iframe');
+    if (!iframe || !iframe.contentWindow) return;
+    // Request current video data to detect ad video ID mismatch
+    try {
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command', func: 'getVideoData', args: []
+      }), '*');
+      // Also request player state
+      iframe.contentWindow.postMessage(JSON.stringify({
+        event: 'command', func: 'getPlayerState', args: []
+      }), '*');
+    } catch(e) {}
+  }, 600); // check every 600ms
+}
+
+function stopGlobalAdDetect() {
+  if (adDetectTimer) { clearInterval(adDetectTimer); adDetectTimer = null; }
+}
+
+// Layer 7: Enhanced message listener — catches ad states
+var _origMsgHandler = null;
+window.addEventListener('message', function(e) {
+  if (!e.origin || e.origin.indexOf('youtube') === -1) return;
+  if (!adBlockEnabled) return;
+  try {
+    var data = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+    if (!data) return;
+    // Detect ad via videoData video_id mismatch
+    if (data.event === 'infoDelivery' && data.info) {
+      var info = data.info;
+      // Video ID mismatch = ad playing
+      if (info.videoData && curIdx >= 0 && tracks[curIdx]) {
+        var playingId = info.videoData.video_id;
+        if (playingId && playingId !== tracks[curIdx].id) {
+          lastKnownVideoId = playingId;
+          if (!isAdShowing) { triggerAdOverlay(); }
+          else {
+            // Still in ad — keep trying to skip
+            adSkipAttempts++;
+            muteForAd();
+            ytCmd('seekTo', [9999, true]);
+            if (adSkipAttempts > 3) reloadCurrentTrack();
+          }
+        } else if (playingId && playingId === tracks[curIdx].id) {
+          if (isAdShowing) hideAdOverlay();
+        }
+      }
+      // Detect buffering/stuck while ad
+      if (info.playerState === 3 && isAdShowing) {
+        ytCmd('seekTo', [9999, true]);
+      }
+      // Detect ad via duration anomaly (ads usually < 30s and not our track)
+      if (info.duration && info.duration > 0 && info.duration < 31 && isPlaying && !isAdShowing) {
+        if (curIdx >= 0) {
+          // Short clip playing — likely ad
+          muteForAd();
+          ytCmd('seekTo', [info.duration, true]);
+          setTimeout(function() { unmuteAfterAd(); }, 1500);
+        }
+      }
+    }
+    // Detect ad via player quality labels (ads often have special markers)
+    if (data.event === 'onStateChange') {
+      if (data.info === 3 && isAdShowing) {
+        // Buffering during ad — force skip
+        setTimeout(function() { ytCmd('seekTo', [9999, true]); }, 300);
+      }
+    }
+  } catch(e2) {}
+});
+
+// Layer 8: CSS injection — hide ALL YouTube ad UI elements in iframe
+function injectAdBlockerCSS() {
+  var styleId = 'qoovy-adblock-css';
+  if (document.getElementById(styleId)) return;
+  var style = document.createElement('style');
+  style.id = styleId;
+  style.textContent = [
+    '.ytp-ad-module', '.ytp-ad-overlay-container', '.ytp-ad-player-overlay',
+    '.ytp-ad-progress', '.ytp-ad-skip-button-container', '.ytp-ad-text',
+    '.ytp-ad-badge', '.ad-showing .ytp-pause-overlay', '.video-ads',
+    '.ytp-ad-image-overlay', '.ytp-suggested-action', '.ytp-ad-action-interstitial',
+    '.ad-container', '#player-ads', '.ytd-banner-promo-renderer',
+    '.ytd-ad-slot-renderer', '.ytd-promoted-sparkles-web-renderer',
+    'ytd-display-ad-renderer', 'ytd-compact-promoted-video-renderer'
+  ].join(',') + ' { display:none !important; visibility:hidden !important; opacity:0 !important; pointer-events:none !important; }';
+  document.head.appendChild(style);
+}
+injectAdBlockerCSS();
+
+// Layer 9: MutationObserver on body to re-inject if removed
+(function watchAdBlockerCSS() {
+  var mo = new MutationObserver(function() { injectAdBlockerCSS(); });
+  mo.observe(document.head, { childList: true });
+})();
+
+// Layer 10: Ad watch (original improved with faster reaction)
+function startAdWatch(videoId) {
+  stopAdWatch();
+  if (!adBlockEnabled) return;
+  startGlobalAdDetect();
+  var checks = 0;
+  adWatchTimer = setInterval(function() {
+    checks++;
+    if (!adBlockEnabled) { stopAdWatch(); return; }
+    // If not playing within 2s of track load → likely ad/preroll, force reload
+    if (checks === 2 && !isPlaying) {
+      muteForAd();
+      ytCmd('seekTo', [9999, true]);
+      ytCmd('stopVideo', []);
+      setTimeout(function() {
+        if (curIdx >= 0 && !isPlaying) {
+          unmuteAfterAd();
+          reloadCurrentTrack();
+        }
+      }, 400);
+    }
+    // Secondary check at 4s
+    if (checks === 4 && !isPlaying) {
+      reloadCurrentTrack();
+    }
+    if (checks > 8) stopAdWatch();
+  }, 1000);
+}
+
+// Init on page load
+window.addEventListener('load', function() {
+  if (adBlockEnabled) startGlobalAdDetect();
+});
 function stopAdWatch(){if(adWatchTimer){clearInterval(adWatchTimer);adWatchTimer=null;}}
 
 // ═══════════════════════════════════════════
