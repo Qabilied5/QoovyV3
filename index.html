@@ -806,6 +806,34 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   .mobile-playlist-toggle { padding: 10px 14px; font-size: 11px; }
   .np-title { font-size: 13px; }
 }
+
+    /* ══ SPOTIFY RECOMMENDATIONS ══ */
+    .sp-rec-section { margin-top: 14px; display: none; }
+    .sp-rec-section.visible { display: block; }
+    .sp-rec-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .sp-rec-title { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .sp-rec-refresh { background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 6px; transition: color 0.15s, background 0.15s; display: flex; align-items: center; }
+    .sp-rec-refresh:hover { color: var(--text); background: var(--glass-hover); }
+    .sp-rec-refresh.spinning svg { animation: sp-spin 0.6s linear; }
+    @keyframes sp-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .sp-rec-list { display: flex; flex-direction: column; gap: 4px; }
+    .sp-rec-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 10px; background: var(--glass); border: 1px solid transparent; cursor: pointer; transition: background 0.15s, border-color 0.15s; -webkit-tap-highlight-color: transparent; }
+    .sp-rec-item:hover { background: var(--glass-hover); border-color: var(--glass-border); }
+    .sp-rec-thumb { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--muted2); }
+    .sp-rec-info { flex: 1; min-width: 0; }
+    .sp-rec-name { font-size: 12px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-rec-artist { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+    .sp-rec-add { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,0.06); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: color 0.15s, background 0.15s; }
+    .sp-rec-add:hover { color: var(--text); background: var(--glass-hover); }
+    .sp-skel-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; }
+    .sp-skel-thumb { width: 36px; height: 36px; border-radius: 6px; background: var(--glass); flex-shrink: 0; animation: sp-pulse 1.4s ease-in-out infinite; }
+    .sp-skel-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .sp-skel-line { height: 9px; border-radius: 4px; background: var(--glass); animation: sp-pulse 1.4s ease-in-out infinite; }
+    .sp-skel-line.short { width: 55%; }
+    @keyframes sp-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.9; } }
+    .sp-rec-note { font-size: 10.5px; color: var(--muted); text-align: center; padding: 10px 0 4px; line-height: 1.5; }
+    .sp-rec-note a { color: #1DB954; text-decoration: none; }
+    .sp-rec-note a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -1005,6 +1033,22 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
             <span class="status-pill pill-source">Qoovy Music</span>
             <span class="status-pill pill-adblock" id="pill-adblock">Bebas Iklan</span>
             <span class="status-pill pill-queue" id="pill-queue">Queue</span>
+          </div>
+          <!-- SPOTIFY RECOMMENDATIONS -->
+          <div class="sp-rec-section" id="sp-rec-section">
+            <div class="sp-rec-header">
+              <div class="sp-rec-title">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+                Rekomendasi
+              </div>
+              <button class="sp-rec-refresh" id="sp-rec-refresh" onclick="spRefreshRec()" title="Refresh rekomendasi">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"/>
+                </svg>
+              </button>
+            </div>
+            <div class="sp-rec-list" id="sp-rec-list"></div>
           </div>
         </div>
       </div>
@@ -1565,6 +1609,7 @@ function playTrack(idx){
   document.getElementById('t-dur').textContent='0:00';
   addPlayHistory(t);
   renderTracks();
+  spOnTrackChange();
   scrollToTrack(idx);
   startInfoRequests();
   startAdWatch(t.id);
@@ -1744,6 +1789,260 @@ window.addEventListener('load',function(){
   renderQueueList();
   setTimeout(function(){openModal(true);},500);
 });
+
+// ══════════════════════════════════════════
+// SPOTIFY RECOMMENDATIONS
+// ══════════════════════════════════════════
+var SP_CLIENT_ID     = '';   // ← isi Spotify Client ID kamu
+var SP_CLIENT_SECRET = '';   // ← isi Spotify Client Secret kamu
+var spToken = null;
+var spTokenExpiry = 0;
+var spRecDebounce = null;
+var spLastTrackTitle = '';
+
+// Get/refresh Spotify access token (Client Credentials flow)
+async function spGetToken() {
+  if (spToken && Date.now() < spTokenExpiry - 30000) return spToken;
+  if (!SP_CLIENT_ID || !SP_CLIENT_SECRET) return null;
+  try {
+    var res = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + btoa(SP_CLIENT_ID + ':' + SP_CLIENT_SECRET)
+      },
+      body: 'grant_type=client_credentials'
+    });
+    if (!res.ok) return null;
+    var data = await res.json();
+    spToken = data.access_token;
+    spTokenExpiry = Date.now() + (data.expires_in * 1000);
+    return spToken;
+  } catch(e) { return null; }
+}
+
+// Search Spotify for a track and return {trackId, artistId, genres[]}
+async function spSearchTrack(title, artist) {
+  var token = await spGetToken();
+  if (!token) return null;
+  // Build query — strip common youtube noise
+  var q = title
+    .replace(/\(.*?(official|video|audio|lyrics|mv|hd|4k|vevo).*?\)/gi, '')
+    .replace(/\[.*?\]/g, '')
+    .replace(/feat\.?|ft\.?/gi, '')
+    .trim();
+  if (artist && artist !== '--') q += ' artist:' + artist;
+  try {
+    var res = await fetch(
+      'https://api.spotify.com/v1/search?q=' + encodeURIComponent(q) + '&type=track&limit=1',
+      { headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return null;
+    var data = await res.json();
+    var track = data.tracks && data.tracks.items && data.tracks.items[0];
+    if (!track) return null;
+    return {
+      trackId:  track.id,
+      artistId: track.artists[0].id,
+      genres:   [] // genres are on artist endpoint, skip extra call
+    };
+  } catch(e) { return null; }
+}
+
+// Fetch recommendations from Spotify
+async function spFetchRecommendations(seedTrackId, seedArtistId) {
+  var token = await spGetToken();
+  if (!token) return null;
+  var params = 'limit=8';
+  if (seedTrackId)  params += '&seed_tracks='  + seedTrackId;
+  if (seedArtistId) params += '&seed_artists=' + seedArtistId;
+  try {
+    var res = await fetch(
+      'https://api.spotify.com/v1/recommendations?' + params,
+      { headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) return null;
+    var data = await res.json();
+    return data.tracks || [];
+  } catch(e) { return null; }
+}
+
+// Render skeleton while loading
+function spShowSkeleton() {
+  var list = document.getElementById('sp-rec-list');
+  var skels = '';
+  for (var i = 0; i < 5; i++) {
+    skels += '<div class="sp-skel-row">'
+      + '<div class="sp-skel-thumb"></div>'
+      + '<div class="sp-skel-lines">'
+      + '<div class="sp-skel-line"></div>'
+      + '<div class="sp-skel-line short"></div>'
+      + '</div></div>';
+  }
+  list.innerHTML = skels;
+}
+
+// Render recommendation items
+function spRenderTracks(tracks) {
+  var list = document.getElementById('sp-rec-list');
+  if (!tracks || !tracks.length) {
+    list.innerHTML = '<div class="sp-rec-note">Tidak ada rekomendasi ditemukan.</div>';
+    return;
+  }
+
+  // Simpan data di array global, render pakai data-index — hindari quote hell di onclick
+  window._spRecData = tracks;
+
+  list.innerHTML = tracks.map(function(t, i) {
+    var name   = t.name || '';
+    var artist = (t.artists || []).map(function(a){ return a.name; }).join(', ');
+    var thumb  = (t.album && t.album.images && t.album.images[2])
+                 ? t.album.images[2].url
+                 : (t.album && t.album.images && t.album.images[0])
+                   ? t.album.images[0].url : '';
+    return '<div class="sp-rec-item" data-idx="' + i + '">'
+      + (thumb
+          ? '<img class="sp-rec-thumb" src="' + thumb + '" loading="lazy" onerror="this.style.display=\'none\'"/>'
+          : '<div class="sp-rec-thumb"></div>')
+      + '<div class="sp-rec-info">'
+      + '<div class="sp-rec-name">'   + name   + '</div>'
+      + '<div class="sp-rec-artist">' + artist + '</div>'
+      + '</div>'
+      + '<button class="sp-rec-add" data-idx="' + i + '" title="Tambah ke antrian">'
+      + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'
+      + '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'
+      + '</svg></button>'
+      + '</div>';
+  }).join('');
+
+  // Event delegation — satu listener untuk semua item
+  list.addEventListener('click', function handler(e) {
+    var item = e.target.closest('.sp-rec-item');
+    if (!item) return;
+    var addBtn = e.target.closest('.sp-rec-add');
+    var idx = parseInt((addBtn || item).dataset.idx, 10);
+    var rec = window._spRecData[idx];
+    if (!rec) return;
+    var name   = rec.name || '';
+    var artist = (rec.artists || []).map(function(a){ return a.name; }).join(', ');
+    var query  = encodeURIComponent(name + ' ' + artist);
+    var label  = name + ' ' + artist;
+    if (addBtn) {
+      e.stopPropagation();
+      spQueueRec(query, label);
+    } else {
+      spPlayRec(query, label);
+    }
+    // Remove listener after use so it doesn't stack on re-render
+    list.removeEventListener('click', handler);
+  });
+}
+// Show "configure API key" note
+function spShowConfigNote() {
+  var list = document.getElementById('sp-rec-list');
+  list.innerHTML = '<div class="sp-rec-note">'
+    + 'Isi <code>SP_CLIENT_ID</code> & <code>SP_CLIENT_SECRET</code><br>'
+    + 'di kode untuk aktifkan rekomendasi. '
+    + '<a href="https://developer.spotify.com/dashboard" target="_blank">Buat app gratis →</a>'
+    + '</div>';
+}
+
+// Main: load recommendations for current track
+async function spLoadRecommendations() {
+  if (!currentTrack) return;
+
+  var section = document.getElementById('sp-rec-section');
+  section.classList.add('visible');
+
+  if (!SP_CLIENT_ID || !SP_CLIENT_SECRET) {
+    spShowConfigNote();
+    return;
+  }
+
+  spShowSkeleton();
+
+  var title  = currentTrack.title || '';
+  var artist = currentTrack.ch   || '';
+  var seed   = await spSearchTrack(title, artist);
+
+  var recs;
+  if (seed) {
+    recs = await spFetchRecommendations(seed.trackId, seed.artistId);
+  } else {
+    // Fallback: genre-based if search fails
+    recs = await spFetchRecommendations(null, null);
+  }
+
+  spRenderTracks(recs);
+}
+
+// Called when track changes — debounced 1.2s
+function spOnTrackChange() {
+  if (!currentTrack) return;
+  if (currentTrack.title === spLastTrackTitle) return;
+  spLastTrackTitle = currentTrack.title;
+  clearTimeout(spRecDebounce);
+  spRecDebounce = setTimeout(spLoadRecommendations, 1200);
+}
+
+// Refresh button
+function spRefreshRec() {
+  var btn = document.getElementById('sp-rec-refresh');
+  btn.classList.add('spinning');
+  setTimeout(function(){ btn.classList.remove('spinning'); }, 650);
+  spLastTrackTitle = ''; // force reload
+  spLoadRecommendations();
+}
+
+// Play recommendation: search YouTube and play first result
+async function spPlayRec(ytQuery, label) {
+  if (!API_KEY) { toast('API key YouTube belum diatur', 'warn'); return; }
+  toast('Mencari: ' + label, 'info');
+  try {
+    var res = await fetch(
+      'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=1&q='
+      + ytQuery + '&key=' + API_KEY
+    );
+    var data = await res.json();
+    var item = data.items && data.items[0];
+    if (!item) { toast('Lagu tidak ditemukan di YouTube', 'warn'); return; }
+    var t = {
+      id: item.id.videoId,
+      title: item.snippet.title,
+      ch: item.snippet.channelTitle,
+      thumb: (item.snippet.thumbnails.default || {}).url || ''
+    };
+    tracks.unshift(t);
+    renderTracks();
+    playTrack(0);
+  } catch(e) { toast('Gagal memuat lagu', 'error'); }
+}
+
+// Queue recommendation
+async function spQueueRec(ytQuery, label) {
+  if (!API_KEY) { toast('API key YouTube belum diatur', 'warn'); return; }
+  toast('Menambahkan ke antrian: ' + label, 'info');
+  try {
+    var res = await fetch(
+      'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=1&q='
+      + ytQuery + '&key=' + API_KEY
+    );
+    var data = await res.json();
+    var item = data.items && data.items[0];
+    if (!item) { toast('Lagu tidak ditemukan', 'warn'); return; }
+    var t = {
+      id: item.id.videoId,
+      title: item.snippet.title,
+      ch: item.snippet.channelTitle,
+      thumb: (item.snippet.thumbnails.default || {}).url || ''
+    };
+    musicQueue.push(t);
+    renderQueue();
+    toast('Ditambahkan ke antrian ✓', 'success');
+  } catch(e) { toast('Gagal menambahkan', 'error'); }
+}
+// ══ END SPOTIFY RECOMMENDATIONS ══
+
 </script>
 </body>
 </html>
