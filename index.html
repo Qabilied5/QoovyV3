@@ -348,33 +348,7 @@ header {
 .sh-clear-row:hover { background:rgba(167,139,250,0.06); }
 
 /* SIDEBAR TABS */
-.sidebar-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--glass-border);
-  flex-shrink: 0;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  scroll-behavior: smooth;
-}
-.sidebar-tabs::-webkit-scrollbar { display: none; }
-.sidebar-tabs .tab-btn { flex-shrink: 0; }
-
-/* Recommendation panel */
-.rec-head { display:flex; align-items:center; justify-content:space-between; padding:10px 14px 6px; }
-.rec-head-title { font-size:10px; letter-spacing:2px; color:#a78bfa; text-transform:uppercase; font-weight:700; }
-.rec-loading { display:flex; flex-direction:column; align-items:center; gap:8px; padding:28px 0; color:var(--muted); font-size:11px; }
-.rec-item { display:flex; align-items:center; gap:9px; padding:7px 14px; cursor:pointer; transition:background 0.15s; border-radius:0; }
-.rec-item:hover { background:var(--glass-hover); }
-.rec-thumb { width:38px; height:38px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#2a2a3a; }
-.rec-info { flex:1; min-width:0; }
-.rec-title { font-size:11.5px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.rec-ch { font-size:10px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
-.btn-rec-add { width:26px; height:26px; border-radius:50%; flex-shrink:0; background:rgba(167,139,250,0.08); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:color 0.15s, background 0.15s; }
-.btn-rec-add:hover { color:#a78bfa; background:rgba(167,139,250,0.18); }
-.rec-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:32px 16px; color:var(--muted); font-size:11px; text-align:center; }
-.rec-source-label { font-size:9.5px; color:var(--muted); letter-spacing:0.08em; padding:4px 14px 8px; opacity:0.6; }
+.sidebar-tabs { display:flex; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
 .tab-btn {
   flex:1; background:none; border:none; color:var(--muted);
   font-family:inherit; font-size:11px; font-weight:600; letter-spacing:1px;
@@ -921,9 +895,6 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
         History <span class="tab-badge hist-badge" id="badge-history">0</span>
       </button>
-      <button class="tab-btn" id="tab-recommendation" onclick="switchTab('recommendation')">
-        Rekomendasi <span class="tab-badge rec-badge" id="badge-recommendation">0</span>
-      </button>
     </div>
 
     <!-- PLAYLIST TAB -->
@@ -983,22 +954,6 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
         </div>
       </div>
     </div>
-  </div>
-
-    <!-- RECOMMENDATION TAB -->
-    <div class="tab-panel" id="panel-recommendation">
-      <div class="rec-head">
-        <div class="rec-head-title">Rekomendasi</div>
-      </div>
-      <div class="rec-source-label" id="rec-source-label"></div>
-      <div id="rec-list">
-        <div class="rec-empty">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <span>Cari lagu untuk melihat rekomendasi</span>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <!-- MAIN PANEL -->
@@ -1382,11 +1337,10 @@ function savePlayHistory() { try { localStorage.setItem(LS_PLAY_HIST, JSON.strin
 // ═══════════════════════════════════════════
 function switchTab(tab) {
   activeTab = tab;
-  ['playlist','queue','history','recommendation'].forEach(function(t) {
+  ['playlist','queue','history'].forEach(function(t) {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('panel-'+t).classList.toggle('active', t===tab);
   });
-  if (tab === 'recommendation') loadRecommendations();
 }
 
 // ═══════════════════════════════════════════
@@ -1709,8 +1663,6 @@ function trySearchWithProxy(q,btn){
     setModeText('Qoovy ('+(corsProxyIdx===0?'Aktif':'via proxy')+')');
     toast('Ditemukan '+tracks.length+' lagu');
     if(isShuffle) buildShuffleQueue(curIdx);
-    recLastQuery = q; recLastVideoId = tracks.length ? tracks[0].id : '';
-    loadRecommendationsForQuery(q, recLastVideoId);
   }).catch(function(){corsProxyIdx++;trySearchWithProxy(q,btn);});
 }
 function setModeText(text){document.getElementById('mode-text').textContent=text;}
@@ -1792,133 +1744,6 @@ window.addEventListener('load',function(){
   renderQueueList();
   setTimeout(function(){openModal(true);},500);
 });
-
-// ═══════════════════════════════════════════
-// RECOMMENDATION ENGINE (YouTube relatedToVideoId)
-// ═══════════════════════════════════════════
-var recLastQuery = '';
-var recLastVideoId = '';
-var recItems = [];
-var recLoading = false;
-
-function loadRecommendations() {
-  if (recLastQuery) {
-    loadRecommendationsForQuery(recLastQuery, recLastVideoId);
-  }
-}
-
-function loadRecommendationsForQuery(query, videoId) {
-  var list = document.getElementById('rec-list');
-  var srcLabel = document.getElementById('rec-source-label');
-  if (!list) return;
-  if (recLoading) return;
-  recLoading = true;
-
-  // Show skeleton
-  list.innerHTML = '<div class="rec-loading"><div class="spinner-sm"></div><span>Memuat rekomendasi...</span></div>';
-  document.getElementById('badge-recommendation').textContent = '...';
-
-  // Strategy: use relatedToVideoId if we have a videoId and API key
-  // Fallback: search YouTube with similar query terms
-  var fetched = false;
-
-  function tryRelated() {
-    if (!API_KEY || !videoId) { tryQueryFallback(); return; }
-    var url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=15&relatedToVideoId=' + encodeURIComponent(videoId) + '&key=' + API_KEY;
-    fetch(url)
-      .then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(data) {
-        if (data.error || !data.items || !data.items.length) throw new Error('no results');
-        fetched = true;
-        var items = data.items.filter(function(it){ return it.id && it.id.videoId; });
-        renderRecItems(items, 'Berdasarkan lagu yang dicari');
-      })
-      .catch(function() { tryQueryFallback(); });
-  }
-
-  function tryQueryFallback() {
-    if (!API_KEY) { renderRecDemo(query); return; }
-    // Build variation query: add "similar" or related artist keywords
-    var q = query + ' similar songs';
-    var url = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=15&q=' + encodeURIComponent(q) + '&key=' + API_KEY;
-    fetch(url)
-      .then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(function(data) {
-        if (data.error || !data.items || !data.items.length) throw new Error('no results');
-        var items = data.items.filter(function(it){ return it.id && it.id.videoId; });
-        renderRecItems(items, 'Lagu serupa: "' + query.substring(0,28) + '"');
-      })
-      .catch(function() { renderRecDemo(query); });
-  }
-
-  tryRelated();
-}
-
-function renderRecItems(items, sourceLabel) {
-  recLoading = false;
-  recItems = items.map(function(it) {
-    return {
-      id:    it.id.videoId,
-      title: it.snippet.title,
-      ch:    it.snippet.channelTitle,
-      thumb: (it.snippet.thumbnails.default || {}).url || ''
-    };
-  });
-
-  document.getElementById('badge-recommendation').textContent = recItems.length;
-  var srcEl = document.getElementById('rec-source-label');
-  if (srcEl) srcEl.textContent = sourceLabel || '';
-
-  if (!recItems.length) {
-    document.getElementById('rec-list').innerHTML = '<div class="rec-empty"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Tidak ada rekomendasi ditemukan</span></div>';
-    return;
-  }
-
-  // Store for event delegation
-  window._recData = recItems;
-  var html = recItems.map(function(t, i) {
-    var thumbSrc = esc(t.thumb);
-    return '<div class="rec-item" data-rec-idx="' + i + '">'
-      + '<img class="rec-thumb" src="' + thumbSrc + '" alt="" onerror="this.style.background=&quot;#2a2a3a&quot;" loading="lazy"/>'
-      + '<div class="rec-info"><div class="rec-title">' + esc(t.title) + '</div><div class="rec-ch">' + esc(t.ch) + '</div></div>'
-      + '<button class="btn-rec-add" data-rec-idx="' + i + '" title="Tambah ke antrean">'
-      + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
-      + '</button>'
-      + '</div>';
-  }).join('');
-
-  var list = document.getElementById('rec-list');
-  list.innerHTML = html;
-
-  // Single event delegation handler
-  list.onclick = function(e) {
-    var addBtn = e.target.closest('.btn-rec-add');
-    var item   = e.target.closest('.rec-item');
-    if (!item) return;
-    var idx = parseInt((addBtn || item).dataset.recIdx, 10);
-    var t = (window._recData || [])[idx];
-    if (!t) return;
-    if (addBtn) {
-      e.stopPropagation();
-      addToQueue(t);
-    } else {
-      // Play: add to top of playlist and play
-      tracks.unshift(t);
-      renderTracks();
-      playTrack(0);
-      switchTab('playlist');
-    }
-  };
-}
-
-function renderRecDemo(query) {
-  recLoading = false;
-  document.getElementById('badge-recommendation').textContent = '0';
-  var srcEl = document.getElementById('rec-source-label');
-  if (srcEl) srcEl.textContent = '';
-  document.getElementById('rec-list').innerHTML = '<div class="rec-empty"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Masukkan API Key untuk rekomendasi nyata</span></div>';
-}
-// ═══ END RECOMMENDATION ENGINE ═══
 </script>
 </body>
 </html>
