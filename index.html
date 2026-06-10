@@ -42,15 +42,10 @@
 
 <!-- ═══ APPLE SPLASH SCREENS ═══ -->
 <meta name="apple-mobile-web-app-capable" content="yes">
-<!-- iPhone 14 Pro Max -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
-<!-- iPhone 14 Pro -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
-<!-- iPhone 14 / 13 -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="icons/icon-512.png">
-<!-- iPhone SE -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/icon-384.png">
-<!-- iPad -->
 <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="icons/icon-512.png">
 
 <style>
@@ -75,10 +70,11 @@
   --green: #4ade80;
   --red: #f87171;
   --yellow: #fbbf24;
+  --upnext: #c084fc; /* Up Next color — warmer purple */
   --glow-a: rgba(167,139,250,0.35);
   --glow-b: rgba(236,100,162,0.25);
+  --glow-upnext: rgba(192,132,252,0.3);
 
-  /* Safe area insets for notch/dynamic island */
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
   --sal: env(safe-area-inset-left, 0px);
@@ -88,7 +84,6 @@
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html {
   height: 100%;
-  /* Prevent iOS rubber-banding on PWA */
   overscroll-behavior: none;
 }
 body {
@@ -97,22 +92,17 @@ body {
   font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
   display: flex; flex-direction: column;
   height: 100%; min-height: 100%;
-  /* Account for notch/safe areas */
   padding-top: var(--sat);
   padding-left: var(--sal);
   padding-right: var(--sar);
   position: relative;
   overflow: hidden;
-  /* Prevent text selection accidental in PWA */
   -webkit-user-select: none;
   user-select: none;
-  /* Smooth scroll */
   -webkit-overflow-scrolling: touch;
 }
-/* Re-allow text selection in inputs */
 input, textarea { -webkit-user-select: text; user-select: text; }
 
-/* Window Controls Overlay (desktop PWA title bar) */
 @media (display-mode: window-controls-overlay) {
   header {
     padding-top: calc(env(titlebar-area-height, 36px) + 6px) !important;
@@ -121,7 +111,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   .header-right, .logo-wrap { app-region: no-drag; }
 }
 
-/* Standalone mode tweaks */
 @media (display-mode: standalone) {
   body { padding-bottom: var(--sab); }
   .controls-zone {
@@ -200,10 +189,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   padding: 5px 12px; cursor: pointer; transition: all 0.2s;
 }
 .btn-update-now:hover { transform: scale(1.05); }
-
-/* ═══════════════════════════════ */
-/*  ALL ORIGINAL STYLES BELOW     */
-/* ═══════════════════════════════ */
 
 /* BG */
 .bg-scene { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
@@ -347,13 +332,14 @@ header {
 }
 .sh-clear-row:hover { background:rgba(167,139,250,0.06); }
 
-/* SIDEBAR TABS */
-.sidebar-tabs { display:flex; border-bottom:1px solid var(--glass-border); flex-shrink:0; }
+/* SIDEBAR TABS — 5 tabs now */
+.sidebar-tabs { display:flex; border-bottom:1px solid var(--glass-border); flex-shrink:0; overflow-x:auto; scrollbar-width:none; }
+.sidebar-tabs::-webkit-scrollbar { display:none; }
 .tab-btn {
   flex:1; background:none; border:none; color:var(--muted);
-  font-family:inherit; font-size:11px; font-weight:600; letter-spacing:1px;
-  text-transform:uppercase; padding:10px 4px; cursor:pointer;
-  position:relative; transition:all 0.2s;
+  font-family:inherit; font-size:10.5px; font-weight:600; letter-spacing:0.8px;
+  text-transform:uppercase; padding:10px 3px; cursor:pointer;
+  position:relative; transition:all 0.2s; white-space:nowrap; min-width:0;
 }
 .tab-btn:hover { color:var(--text); }
 .tab-btn.active { color:var(--accent); }
@@ -362,15 +348,21 @@ header {
   background:linear-gradient(90deg, var(--accent), var(--accent2));
   border-radius:2px;
 }
+/* Up Next tab active state uses its own color */
+.tab-btn.tab-upnext.active { color:var(--upnext); }
+.tab-btn.tab-upnext.active::after {
+  background:linear-gradient(90deg, var(--upnext), #e879f9);
+}
 .tab-badge {
   display:inline-flex; align-items:center; justify-content:center;
   min-width:16px; height:16px; padding:0 4px;
   background:rgba(167,139,250,0.2); border-radius:8px;
   font-size:9px; font-weight:700; color:var(--accent);
-  margin-left:4px; vertical-align:middle;
+  margin-left:3px; vertical-align:middle;
 }
 .tab-badge.queue-badge { background:rgba(251,191,36,0.15); color:var(--yellow); }
 .tab-badge.hist-badge { background:rgba(56,189,248,0.15); color:var(--accent3); }
+.tab-badge.upnext-badge { background:rgba(192,132,252,0.15); color:var(--upnext); }
 
 /* TAB PANELS */
 .tab-panel { display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0; }
@@ -480,6 +472,137 @@ header {
 }
 .hist-item:hover { background:var(--glass-hover); border-color:var(--glass-border); }
 .hist-time { font-size:9px; font-family:'Courier New',monospace; color:var(--accent3); white-space:nowrap; flex-shrink:0; }
+
+/* ═══════════════════════════════════════
+   UP NEXT PANEL
+═══════════════════════════════════════ */
+.upnext-head {
+  padding:10px 14px 0;
+  flex-shrink:0;
+}
+.upnext-head-row {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:6px;
+}
+.upnext-head-title {
+  font-size:10px; letter-spacing:2px; color:var(--upnext);
+  text-transform:uppercase; font-weight:700;
+  display:flex; align-items:center; gap:6px;
+}
+.upnext-head-title svg { opacity:0.8; }
+.upnext-actions { display:flex; align-items:center; gap:6px; }
+.btn-upnext-refresh {
+  background:rgba(192,132,252,0.1); border:1px solid rgba(192,132,252,0.2);
+  color:var(--upnext); width:28px; height:28px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all 0.2s; flex-shrink:0;
+}
+.btn-upnext-refresh:hover { background:rgba(192,132,252,0.2); transform:rotate(90deg) scale(1.1); box-shadow:0 0 12px var(--glow-upnext); }
+.btn-upnext-refresh.spinning svg { animation:spin 0.6s linear infinite; }
+.btn-upnext-genre {
+  background:rgba(192,132,252,0.08); border:1px solid rgba(192,132,252,0.18);
+  color:var(--upnext); font-size:9px; font-weight:700; letter-spacing:0.8px;
+  padding:3px 9px; border-radius:8px; cursor:pointer; text-transform:uppercase;
+  transition:all 0.2s; white-space:nowrap;
+}
+.btn-upnext-genre:hover { background:rgba(192,132,252,0.16); }
+
+/* Genre pills row */
+.upnext-genre-row {
+  display:flex; gap:5px; overflow-x:auto; scrollbar-width:none;
+  padding-bottom:8px;
+}
+.upnext-genre-row::-webkit-scrollbar { display:none; }
+.genre-pill {
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+  color:var(--muted); font-size:9px; font-weight:600; letter-spacing:0.5px;
+  padding:4px 10px; border-radius:20px; cursor:pointer; white-space:nowrap;
+  transition:all 0.2s; flex-shrink:0;
+}
+.genre-pill:hover { background:rgba(192,132,252,0.1); border-color:rgba(192,132,252,0.25); color:var(--upnext); }
+.genre-pill.active {
+  background:rgba(192,132,252,0.15); border-color:rgba(192,132,252,0.35);
+  color:var(--upnext); box-shadow:0 0 8px rgba(192,132,252,0.2);
+}
+
+/* Divider inside upnext */
+.upnext-divider {
+  height:1px; background:var(--glass-border); margin:0 0 0 0; flex-shrink:0;
+}
+
+/* Up Next source info banner */
+.upnext-source-info {
+  padding:5px 14px 4px;
+  font-size:9.5px; color:var(--muted2);
+  display:flex; align-items:center; gap:5px;
+  flex-shrink:0;
+}
+.upnext-source-dot {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--upnext); flex-shrink:0; opacity:0.7;
+  animation:upnext-pulse 2s ease-in-out infinite;
+}
+@keyframes upnext-pulse { 0%,100% { opacity:0.7; } 50% { opacity:0.2; } }
+
+/* Up Next track item — slightly different from playlist */
+.upnext-item {
+  display:flex; align-items:center; gap:8px; padding:7px 8px;
+  border-radius:12px; cursor:pointer; transition:all 0.2s;
+  border:1px solid transparent; margin-bottom:3px; position:relative;
+}
+.upnext-item:hover { background:var(--glass-hover); border-color:rgba(192,132,252,0.15); }
+.upnext-item:hover .upnext-item-actions { opacity:1; }
+.upnext-item.playing {
+  background:rgba(192,132,252,0.1); border-color:rgba(192,132,252,0.25);
+  box-shadow:inset 0 0 20px rgba(192,132,252,0.04), 0 0 12px rgba(192,132,252,0.08);
+}
+.upnext-num {
+  font-size:10px; font-family:'Courier New',monospace; color:var(--muted2);
+  min-width:18px; text-align:right; flex-shrink:0;
+}
+.upnext-item.playing .upnext-num { display:none; }
+.upnext-wave { display:none; align-items:flex-end; gap:2px; height:14px; min-width:18px; justify-content:center; }
+.upnext-item.playing .upnext-wave { display:flex; }
+.upnext-wave-bar { width:3px; border-radius:2px; background:var(--upnext); animation:wave-anim 0.8s ease-in-out infinite; }
+.upnext-wave-bar:nth-child(1) { animation-delay:0s; }
+.upnext-wave-bar:nth-child(2) { animation-delay:0.15s; }
+.upnext-wave-bar:nth-child(3) { animation-delay:0.3s; }
+
+.upnext-item-actions {
+  opacity:0; transition:opacity 0.15s; display:flex; align-items:center; gap:2px;
+}
+.btn-upnext-to-queue {
+  background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.2);
+  color:var(--yellow); width:26px; height:26px; border-radius:7px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all 0.2s; flex-shrink:0;
+}
+.btn-upnext-to-queue:hover { background:rgba(251,191,36,0.2); transform:scale(1.1); }
+
+/* Loading skeleton for up next */
+.upnext-skeleton {
+  padding:4px 8px 12px;
+}
+.skel-item {
+  display:flex; align-items:center; gap:8px; padding:7px 8px; margin-bottom:3px;
+}
+.skel-thumb {
+  width:40px; height:40px; border-radius:8px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+  background-size:200% 100%;
+  animation:skel-shimmer 1.4s ease-in-out infinite;
+  flex-shrink:0;
+}
+.skel-info { flex:1; display:flex; flex-direction:column; gap:5px; }
+.skel-line {
+  height:9px; border-radius:4px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+  background-size:200% 100%;
+  animation:skel-shimmer 1.4s ease-in-out infinite;
+}
+.skel-line:nth-child(1) { width:70%; animation-delay:0s; }
+.skel-line:nth-child(2) { width:45%; animation-delay:0.1s; }
+@keyframes skel-shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
 
 /* SEARCH MODE INFO */
 .search-mode-info {
@@ -720,6 +843,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   .video-area { padding: 16px 16px 12px; }
   .controls-zone { padding: 12px 16px 18px; }
   .np-title { font-size: 18px; }
+  .tab-btn { font-size: 9.5px; letter-spacing: 0.5px; padding: 10px 2px; }
 }
 
 @media (max-width: 640px) {
@@ -794,6 +918,8 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
   .prog-track { height: 6px; border-radius: 6px; margin: 6px 0; }
   .prog-fill { border-radius: 6px; }
   .prog-fill::after { width: 14px; height: 14px; right: -7px; opacity: 1; }
+  .tab-btn { font-size: 9px; letter-spacing: 0.3px; padding: 9px 2px; }
+  .tab-badge { font-size: 8px; min-width: 14px; height: 14px; margin-left: 2px; }
 }
 
 @media (max-width: 380px) {
@@ -892,6 +1018,9 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       <button class="tab-btn" id="tab-queue" onclick="switchTab('queue')">
         Queue <span class="tab-badge queue-badge" id="badge-queue">0</span>
       </button>
+      <button class="tab-btn tab-upnext" id="tab-upnext" onclick="switchTab('upnext')">
+        Up Next <span class="tab-badge upnext-badge" id="badge-upnext">0</span>
+      </button>
       <button class="tab-btn" id="tab-history" onclick="switchTab('history')">
         History <span class="tab-badge hist-badge" id="badge-history">0</span>
       </button>
@@ -936,6 +1065,36 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       </div>
     </div>
 
+    <!-- UP NEXT TAB -->
+    <div class="tab-panel" id="panel-upnext">
+      <div class="upnext-head">
+        <div class="upnext-head-row">
+          <div class="upnext-head-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 4 15 12 5 20 5 4"/><rect x="16" y="4" width="3" height="16" rx="1"/>
+            </svg>
+            Rekomendasi
+          </div>
+          <div class="upnext-actions">
+            <button class="btn-upnext-refresh" id="btn-upnext-refresh" onclick="refreshUpNext()" title="Acak ulang rekomendasi">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- Genre pills -->
+        <div class="upnext-genre-row" id="upnext-genre-row"></div>
+      </div>
+      <div class="upnext-divider"></div>
+      <div class="upnext-source-info">
+        <span class="upnext-source-dot"></span>
+        <span id="upnext-source-text">Rekomendasi acak dari berbagai genre</span>
+      </div>
+      <div class="track-list" id="upnext-list"></div>
+    </div>
+
     <!-- HISTORY TAB -->
     <div class="tab-panel" id="panel-history">
       <div class="history-head">
@@ -945,9 +1104,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       <div class="track-list" id="history-list">
         <div class="empty-wrap">
           <div class="empty-icon-wrap">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           </div>
           <div class="empty-title">Belum ada riwayat</div>
           <div class="empty-sub">Lagu yang diputar akan muncul di sini</div>
@@ -1018,6 +1175,7 @@ input[type=range].vol-slider::-webkit-slider-thumb:hover { background:var(--acce
       <div class="kbd-hint-item"><span class="kbd-key">S</span><span class="kbd-desc">Shuffle</span></div>
       <div class="kbd-hint-item"><span class="kbd-key">R</span><span class="kbd-desc">Repeat</span></div>
       <div class="kbd-hint-item"><span class="kbd-key">Q</span><span class="kbd-desc">Queue Tab</span></div>
+      <div class="kbd-hint-item"><span class="kbd-key">U</span><span class="kbd-desc">Up Next</span></div>
     </div>
 
     <div class="controls-zone">
@@ -1144,37 +1302,24 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
       .then(function(reg) {
         swReg = reg;
-        console.log('[Qoovy PWA] Service Worker registered:', reg.scope);
-
-        // Check for updates
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
           newWorker.addEventListener('statechange', function() {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // New version available
               document.getElementById('update-bar').classList.add('show');
             }
           });
         });
-      })
-      .catch(function(err) {
-        console.warn('[Qoovy PWA] SW registration failed:', err);
-      });
-
-    // Detect controller change (after update)
+      }).catch(function(err) {});
     navigator.serviceWorker.addEventListener('controllerchange', function() {
       window.location.reload();
     });
   });
 }
 
-// ═══════════════════════════════════════════
-//  PWA INSTALL PROMPT (Android/Desktop Chrome)
-// ═══════════════════════════════════════════
 window.addEventListener('beforeinstallprompt', function(e) {
   e.preventDefault();
   deferredInstallPrompt = e;
-  // Show install bar after 2s
   setTimeout(function() {
     var bar = document.getElementById('pwa-install-bar');
     if (bar && !localStorage.getItem('qoovy_install_dismissed')) {
@@ -1206,9 +1351,6 @@ window.addEventListener('appinstalled', function() {
   toast('Qoovy terpasang di perangkat!');
 });
 
-// ═══════════════════════════════════════════
-//  UPDATE BUTTON
-// ═══════════════════════════════════════════
 document.getElementById('btn-update-now').addEventListener('click', function() {
   if (swReg && swReg.waiting) {
     swReg.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -1217,23 +1359,16 @@ document.getElementById('btn-update-now').addEventListener('click', function() {
   }
 });
 
-// ═══════════════════════════════════════════
-//  ONLINE / OFFLINE DETECTION
-// ═══════════════════════════════════════════
 function updateOnlineStatus() {
   var bar = document.getElementById('offline-bar');
-  if (navigator.onLine) {
-    bar.classList.remove('show');
-  } else {
-    bar.classList.add('show');
-    toast('Tidak ada koneksi — streaming tidak tersedia', 'err');
-  }
+  if (navigator.onLine) { bar.classList.remove('show'); }
+  else { bar.classList.add('show'); toast('Tidak ada koneksi — streaming tidak tersedia', 'err'); }
 }
 window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 
 // ═══════════════════════════════════════════
-//  MEDIA SESSION API (lock screen controls)
+//  MEDIA SESSION API
 // ═══════════════════════════════════════════
 function updateMediaSession(track) {
   if (!('mediaSession' in navigator)) return;
@@ -1258,22 +1393,18 @@ function updateMediaSession(track) {
     }
   });
 }
-
 function setMediaSessionPlayback(playing) {
   if (!('mediaSession' in navigator)) return;
   navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
 }
 
 // ═══════════════════════════════════════════
-//  PREVENT SLEEP (Wake Lock API)
+//  WAKE LOCK
 // ═══════════════════════════════════════════
 var wakeLock = null;
 async function requestWakeLock() {
   if (!('wakeLock' in navigator)) return;
-  try {
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener('release', function() { wakeLock = null; });
-  } catch(e) {}
+  try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', function() { wakeLock = null; }); } catch(e) {}
 }
 async function releaseWakeLock() {
   if (wakeLock) { try { await wakeLock.release(); } catch(e) {} wakeLock = null; }
@@ -1295,10 +1426,10 @@ var LS_PLAY_HIST   = 'qoovy_play_history';
 var API_KEY = '';
 var tracks = [];
 var curIdx = -1;
-var currentTrack = null; // Simpan track yang sedang diplay (independent dari tracks array)
+var currentTrack = null;
 var isPlaying = false;
 var isShuffle = false;
-var repeatMode = 0; // 0=off, 1=all, 2=one
+var repeatMode = 0;
 var isMuted = false;
 var adBlockEnabled = true;
 var volLevel = 80;
@@ -1322,6 +1453,142 @@ var mobilePlaylistOpen = false;
 var activeTab = 'playlist';
 
 // ═══════════════════════════════════════════
+//  UP NEXT STATE
+// ═══════════════════════════════════════════
+var upNextTracks = [];           // Current Up Next pool
+var upNextActiveGenre = 'all';   // Currently selected genre filter
+var upNextFetchTimer = null;
+var upNextIsLoading = false;
+var upNextCurrentlyPlayingId = null; // track ID playing from up next
+
+// ── Genre definitions (YouTube-style discovery)
+// Each genre has: label, queries (used to pick random search terms)
+var UP_NEXT_GENRES = [
+  {
+    id: 'all', label: 'Semua',
+    queries: [
+      'popular hits 2024','trending music 2025','top songs this week',
+      'viral music hits','best new music','hits terbaru 2024',
+      'lagu viral 2024','musik populer indonesia','top chart global'
+    ]
+  },
+  {
+    id: 'pop', label: 'Pop',
+    queries: [
+      'pop hits 2024','best pop songs','top pop music',
+      'pop terbaru 2024','lagu pop indonesia hit','pop viral tiktok'
+    ]
+  },
+  {
+    id: 'hiphop', label: 'Hip-Hop',
+    queries: [
+      'hip hop hits 2024','rap music trending','best rap songs',
+      'hip hop viral','new rap releases','rap indonesia terbaru'
+    ]
+  },
+  {
+    id: 'rnb', label: 'R&B',
+    queries: [
+      'rnb hits 2024','best r&b songs','smooth r&b music',
+      'neo soul hits','r&b trending now','rnb terbaru 2024'
+    ]
+  },
+  {
+    id: 'indie', label: 'Indie',
+    queries: [
+      'indie pop hits','best indie songs 2024','indie music trending',
+      'indie folk hits','indie indonesia terbaik','indie viral 2024'
+    ]
+  },
+  {
+    id: 'electronic', label: 'Electronic',
+    queries: [
+      'electronic music hits','edm trending 2024','best electronic songs',
+      'house music 2024','techno hits','electronic dance music'
+    ]
+  },
+  {
+    id: 'lofi', label: 'Lo-Fi',
+    queries: [
+      'lofi hip hop chill','lofi beats study','lofi music relaxing',
+      'chill lofi beats','lofi playlist 2024','lofi music vibes'
+    ]
+  },
+  {
+    id: 'kpop', label: 'K-Pop',
+    queries: [
+      'kpop hits 2024','best kpop songs','kpop trending now',
+      'kpop new releases','kpop viral tiktok','top kpop 2024'
+    ]
+  },
+  {
+    id: 'rock', label: 'Rock',
+    queries: [
+      'rock hits 2024','best rock songs','rock music trending',
+      'alternative rock hits','rock indonesia terbaik','rock viral 2024'
+    ]
+  },
+  {
+    id: 'dangdut', label: 'Dangdut',
+    queries: [
+      'dangdut hits terbaru','dangdut viral 2024','lagu dangdut populer',
+      'dangdut koplo terbaru','dangdut indonesia trending'
+    ]
+  }
+];
+
+// Static fallback pool (used when no API key or fetch fails)
+// Real random diverse music — NOT search-based
+var UP_NEXT_FALLBACK_POOL = [
+  // Pop
+  {id:'JGwWNGJdvx8',title:'Shape of You',ch:'Ed Sheeran',thumb:'https://i.ytimg.com/vi/JGwWNGJdvx8/default.jpg',genre:'Pop'},
+  {id:'OPf0YbXqDm0',title:'Uptown Funk ft. Bruno Mars',ch:'Mark Ronson',thumb:'https://i.ytimg.com/vi/OPf0YbXqDm0/default.jpg',genre:'Pop'},
+  {id:'kTJczUoc26U',title:'Stay With Me',ch:'Sam Smith',thumb:'https://i.ytimg.com/vi/kTJczUoc26U/default.jpg',genre:'Pop'},
+  {id:'lp-EO5I60KA',title:'Blinding Lights',ch:'The Weeknd',thumb:'https://i.ytimg.com/vi/lp-EO5I60KA/default.jpg',genre:'Pop'},
+  {id:'RqnGWfLnZHQ',title:'Levitating',ch:'Dua Lipa',thumb:'https://i.ytimg.com/vi/RqnGWfLnZHQ/default.jpg',genre:'Pop'},
+  {id:'H5v3kku4y6Q',title:'Good 4 U',ch:'Olivia Rodrigo',thumb:'https://i.ytimg.com/vi/H5v3kku4y6Q/default.jpg',genre:'Pop'},
+  {id:'uelHwf8o7_U',title:'Dance Monkey',ch:'Tones and I',thumb:'https://i.ytimg.com/vi/uelHwf8o7_U/default.jpg',genre:'Pop'},
+  // R&B
+  {id:'qpgTC9MDx1o',title:'Peaches ft. Daniel Caesar',ch:'Justin Bieber',thumb:'https://i.ytimg.com/vi/qpgTC9MDx1o/default.jpg',genre:'R&B'},
+  {id:'04854XqcfBg',title:'Leave The Door Open',ch:'Bruno Mars, Anderson .Paak',thumb:'https://i.ytimg.com/vi/04854XqcfBg/default.jpg',genre:'R&B'},
+  {id:'Jqly_r_oi0g',title:'Essence',ch:'WizKid ft. Tems',thumb:'https://i.ytimg.com/vi/Jqly_r_oi0g/default.jpg',genre:'R&B'},
+  // Hip-Hop
+  {id:'VlyKqODMLkQ',title:'God\'s Plan',ch:'Drake',thumb:'https://i.ytimg.com/vi/VlyKqODMLkQ/default.jpg',genre:'Hip-Hop'},
+  {id:'HMBgtolbe9A',title:'HUMBLE.',ch:'Kendrick Lamar',thumb:'https://i.ytimg.com/vi/HMBgtolbe9A/default.jpg',genre:'Hip-Hop'},
+  {id:'apyV9EZS8EE',title:'rockstar',ch:'Post Malone ft. 21 Savage',thumb:'https://i.ytimg.com/vi/apyV9EZS8EE/default.jpg',genre:'Hip-Hop'},
+  {id:'7wtfhZwyrcc',title:'Circles',ch:'Post Malone',thumb:'https://i.ytimg.com/vi/7wtfhZwyrcc/default.jpg',genre:'Hip-Hop'},
+  // Indie
+  {id:'hT_nvWreIhg',title:'Counting Stars',ch:'OneRepublic',thumb:'https://i.ytimg.com/vi/hT_nvWreIhg/default.jpg',genre:'Indie'},
+  {id:'dUVFIG0YKc4',title:'Riptide',ch:'Vance Joy',thumb:'https://i.ytimg.com/vi/dUVFIG0YKc4/default.jpg',genre:'Indie'},
+  {id:'i0p1bmr0EmE',title:'Ho Hey',ch:'The Lumineers',thumb:'https://i.ytimg.com/vi/i0p1bmr0EmE/default.jpg',genre:'Indie'},
+  // Electronic
+  {id:'pt8VYOfr8To',title:'Titanium ft. Sia',ch:'David Guetta',thumb:'https://i.ytimg.com/vi/pt8VYOfr8To/default.jpg',genre:'Electronic'},
+  {id:'gCYcHz2k5x0',title:'Wake Me Up',ch:'Avicii',thumb:'https://i.ytimg.com/vi/gCYcHz2k5x0/default.jpg',genre:'Electronic'},
+  {id:'1y6smkh6c-0',title:'Lean On',ch:'Major Lazer & DJ Snake',thumb:'https://i.ytimg.com/vi/1y6smkh6c-0/default.jpg',genre:'Electronic'},
+  // Lo-Fi vibes
+  {id:'5qap5aO4i9A',title:'Lofi Hip Hop Radio - Chill Study Beats',ch:'Lofi Girl',thumb:'https://i.ytimg.com/vi/5qap5aO4i9A/default.jpg',genre:'Lo-Fi'},
+  {id:'jfKfPfyJRdk',title:'Lofi Hip Hop Radio — Relaxing Music',ch:'Lofi Girl',thumb:'https://i.ytimg.com/vi/jfKfPfyJRdk/default.jpg',genre:'Lo-Fi'},
+  // Indonesia
+  {id:'IA7ZqkHE0o8',title:'Hati-Hati di Jalan',ch:'Tulus',thumb:'https://i.ytimg.com/vi/IA7ZqkHE0o8/default.jpg',genre:'Pop'},
+  {id:'Z7-7tEHSu6c',title:'Bertaut',ch:'Nadin Amizah',thumb:'https://i.ytimg.com/vi/Z7-7tEHSu6c/default.jpg',genre:'Indie'},
+  {id:'1J8fQ-kKx6c',title:'Tentang Kamu',ch:'Rizky Febian',thumb:'https://i.ytimg.com/vi/1J8fQ-kKx6c/default.jpg',genre:'Pop'},
+  {id:'GFmEoFNxlmE',title:'Kamu',ch:'Raisa',thumb:'https://i.ytimg.com/vi/GFmEoFNxlmE/default.jpg',genre:'Pop'},
+  {id:'qoNxizgMqiI',title:'Jangan Pergi',ch:'Mahalini',thumb:'https://i.ytimg.com/vi/qoNxizgMqiI/default.jpg',genre:'Pop'},
+  {id:'3GCe4kHiB4Q',title:'Hanya Rindu',ch:'Andmesh',thumb:'https://i.ytimg.com/vi/3GCe4kHiB4Q/default.jpg',genre:'Pop'},
+  // Rock/Classic
+  {id:'oHg5SJYRHA0',title:'Never Gonna Give You Up',ch:'Rick Astley',thumb:'https://i.ytimg.com/vi/oHg5SJYRHA0/default.jpg',genre:'Pop'},
+  {id:'fJ9rUzIMcZQ',title:'Bohemian Rhapsody',ch:'Queen Official',thumb:'https://i.ytimg.com/vi/fJ9rUzIMcZQ/default.jpg',genre:'Rock'},
+  {id:'kXYiU_JCYtU',title:'Numb',ch:'Linkin Park',thumb:'https://i.ytimg.com/vi/kXYiU_JCYtU/default.jpg',genre:'Rock'},
+  {id:'1w7OgIMMRc4',title:'Sweet Child O Mine',ch:'Guns N Roses',thumb:'https://i.ytimg.com/vi/1w7OgIMMRc4/default.jpg',genre:'Rock'},
+  // K-Pop
+  {id:'gdZLi9oWNZg',title:'Dynamite',ch:'BTS',thumb:'https://i.ytimg.com/vi/gdZLi9oWNZg/default.jpg',genre:'K-Pop'},
+  {id:'MBdVXkSdhwU',title:'Pink Venom',ch:'BLACKPINK',thumb:'https://i.ytimg.com/vi/MBdVXkSdhwU/default.jpg',genre:'K-Pop'},
+  {id:'rRzxEiBLQCA',title:'How You Like That',ch:'BLACKPINK',thumb:'https://i.ytimg.com/vi/rRzxEiBLQCA/default.jpg',genre:'K-Pop'},
+  {id:'pSudEWBAYRE',title:'Butter',ch:'BTS',thumb:'https://i.ytimg.com/vi/pSudEWBAYRE/default.jpg',genre:'K-Pop'},
+  {id:'0-q1KafFCLU',title:'Savage Love',ch:'Jawsh 685 x Jason Derulo',thumb:'https://i.ytimg.com/vi/0-q1KafFCLU/default.jpg',genre:'Pop'},
+];
+
+// ═══════════════════════════════════════════
 //  LOAD FROM LOCALSTORAGE
 // ═══════════════════════════════════════════
 function loadFromStorage() {
@@ -1337,10 +1604,14 @@ function savePlayHistory() { try { localStorage.setItem(LS_PLAY_HIST, JSON.strin
 // ═══════════════════════════════════════════
 function switchTab(tab) {
   activeTab = tab;
-  ['playlist','queue','history'].forEach(function(t) {
+  ['playlist','queue','upnext','history'].forEach(function(t) {
     document.getElementById('tab-'+t).classList.toggle('active', t===tab);
     document.getElementById('panel-'+t).classList.toggle('active', t===tab);
   });
+  // Auto-load up next when switching to it for the first time
+  if (tab === 'upnext' && upNextTracks.length === 0 && !upNextIsLoading) {
+    loadUpNextTracks();
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1461,6 +1732,252 @@ function renderQueueList() {
 }
 
 // ═══════════════════════════════════════════
+//  UP NEXT FEATURE
+// ═══════════════════════════════════════════
+
+/**
+ * Build genre pill UI
+ */
+function buildGenrePills() {
+  var row = document.getElementById('upnext-genre-row');
+  var html = UP_NEXT_GENRES.map(function(g) {
+    return '<button class="genre-pill'+(g.id===upNextActiveGenre?' active':'')+'" data-genre="'+g.id+'" onclick="selectUpNextGenre(\''+g.id+'\')">'
+      + g.label + '</button>';
+  }).join('');
+  row.innerHTML = html;
+}
+
+/**
+ * Select genre filter
+ */
+function selectUpNextGenre(genreId) {
+  upNextActiveGenre = genreId;
+  buildGenrePills();
+  loadUpNextTracks();
+}
+
+/**
+ * Shuffle array in place (Fisher-Yates)
+ */
+function shuffleArray(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+/**
+ * Get random element from array
+ */
+function randPick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Show skeleton loading in up next list
+ */
+function showUpNextSkeleton() {
+  var list = document.getElementById('upnext-list');
+  var html = '<div class="upnext-skeleton">';
+  for (var i = 0; i < 8; i++) {
+    html += '<div class="skel-item"><div class="skel-thumb"></div><div class="skel-info"><div class="skel-line"></div><div class="skel-line"></div></div></div>';
+  }
+  html += '</div>';
+  list.innerHTML = html;
+}
+
+/**
+ * Main Up Next load function.
+ * - If API key present: fetch random query from selected genre using YouTube API
+ * - If no API key: use curated fallback pool, filtered by genre
+ */
+function loadUpNextTracks() {
+  if (upNextIsLoading) return;
+  upNextIsLoading = true;
+  showUpNextSkeleton();
+
+  var genreObj = UP_NEXT_GENRES.find(function(g){ return g.id === upNextActiveGenre; }) || UP_NEXT_GENRES[0];
+
+  if (!API_KEY) {
+    // Use fallback pool, filtered by genre
+    setTimeout(function() {
+      var pool;
+      if (upNextActiveGenre === 'all') {
+        pool = UP_NEXT_FALLBACK_POOL.slice();
+      } else {
+        // Map genre id to pool genre labels
+        var genreMap = {
+          'pop':'Pop','hiphop':'Hip-Hop','rnb':'R&B','indie':'Indie',
+          'electronic':'Electronic','lofi':'Lo-Fi','kpop':'K-Pop','rock':'Rock',
+          'dangdut':'Dangdut'
+        };
+        var label = genreMap[upNextActiveGenre];
+        pool = UP_NEXT_FALLBACK_POOL.filter(function(t){ return t.genre === label; });
+        if (pool.length < 3) pool = UP_NEXT_FALLBACK_POOL.slice(); // fallback to all
+      }
+      shuffleArray(pool);
+      upNextTracks = pool.slice(0, 15); // show 15 random tracks
+      upNextIsLoading = false;
+      renderUpNextList();
+      updateUpNextBadge();
+      document.getElementById('upnext-source-text').textContent = 
+        'Rekomendasi acak — ' + genreObj.label + ' (mode demo)';
+    }, 600);
+    return;
+  }
+
+  // With API key: pick a random query from the genre
+  var randomQuery = randPick(genreObj.queries);
+  // Add randomness — pick a random start index to vary results
+  var startIndex = Math.floor(Math.random() * 5);
+  var ytUrl = 'https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoCategoryId=10&maxResults=20&q='
+    + encodeURIComponent(randomQuery)
+    + '&key=' + API_KEY;
+
+  var proxyIdx = 0;
+  function tryFetch() {
+    var fetchUrl = proxyIdx === 0 ? ytUrl
+      : proxyIdx === 1 ? CORS_PROXIES[0] + encodeURIComponent(ytUrl)
+      : proxyIdx === 2 ? CORS_PROXIES[1] + encodeURIComponent(ytUrl)
+      : null;
+
+    if (!fetchUrl) {
+      // Fallback to static pool on network failure
+      upNextIsLoading = false;
+      useFallbackUpNext(genreObj);
+      return;
+    }
+
+    fetch(fetchUrl)
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(raw) {
+        var data = raw.contents ? JSON.parse(raw.contents) : raw;
+        if (data.error) throw new Error(data.error.message || 'API Error');
+        if (!data.items || !data.items.length) throw new Error('No results');
+
+        var fetched = data.items.map(function(it) {
+          return {
+            id: it.id.videoId,
+            title: it.snippet.title,
+            ch: it.snippet.channelTitle,
+            thumb: (it.snippet.thumbnails.default || {}).url || '',
+            genre: genreObj.label
+          };
+        });
+        // Shuffle the results for true randomness
+        shuffleArray(fetched);
+        upNextTracks = fetched;
+        upNextIsLoading = false;
+        renderUpNextList();
+        updateUpNextBadge();
+        document.getElementById('upnext-source-text').textContent =
+          'Rekomendasi acak — ' + genreObj.label + ' · "' + randomQuery + '"';
+      })
+      .catch(function() {
+        proxyIdx++;
+        tryFetch();
+      });
+  }
+  tryFetch();
+}
+
+function useFallbackUpNext(genreObj) {
+  var pool;
+  if (upNextActiveGenre === 'all') {
+    pool = UP_NEXT_FALLBACK_POOL.slice();
+  } else {
+    var genreMap = {'pop':'Pop','hiphop':'Hip-Hop','rnb':'R&B','indie':'Indie','electronic':'Electronic','lofi':'Lo-Fi','kpop':'K-Pop','rock':'Rock','dangdut':'Dangdut'};
+    var label = genreMap[upNextActiveGenre];
+    pool = UP_NEXT_FALLBACK_POOL.filter(function(t){ return t.genre === label; });
+    if (pool.length < 3) pool = UP_NEXT_FALLBACK_POOL.slice();
+  }
+  shuffleArray(pool);
+  upNextTracks = pool.slice(0, 15);
+  renderUpNextList();
+  updateUpNextBadge();
+  document.getElementById('upnext-source-text').textContent =
+    'Rekomendasi acak — ' + (genreObj ? genreObj.label : 'Semua') + ' (fallback)';
+}
+
+/**
+ * Refresh up next — reshuffle and reload
+ */
+function refreshUpNext() {
+  var btn = document.getElementById('btn-upnext-refresh');
+  btn.classList.add('spinning');
+  upNextTracks = [];
+  loadUpNextTracks();
+  setTimeout(function() { btn.classList.remove('spinning'); }, 700);
+  toast('Rekomendasi diperbarui');
+}
+
+/**
+ * Render Up Next list
+ */
+function renderUpNextList() {
+  var list = document.getElementById('upnext-list');
+  if (!upNextTracks.length) {
+    list.innerHTML = '<div class="empty-wrap"><div class="empty-icon-wrap"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><rect x="16" y="4" width="3" height="16" rx="1"/></svg></div><div class="empty-title">Belum ada rekomendasi</div><div class="empty-sub">Tekan refresh untuk memuat lagu acak</div></div>';
+    return;
+  }
+  var html = upNextTracks.map(function(t, i) {
+    var isPlaying = upNextCurrentlyPlayingId && t.id === upNextCurrentlyPlayingId;
+    return '<div class="upnext-item'+(isPlaying?' playing':'')+'" id="uni-'+i+'" onclick="playFromUpNext('+i+')">'
+      + '<div class="upnext-num">'+(i+1)+'</div>'
+      + '<div class="upnext-wave"><div class="upnext-wave-bar"></div><div class="upnext-wave-bar"></div><div class="upnext-wave-bar"></div></div>'
+      + '<img class="track-thumb" src="'+esc(t.thumb)+'" alt="" onerror="this.style.background=\'#2a2a3a\'" loading="lazy"/>'
+      + '<div class="track-info"><div class="track-title">'+esc(t.title)+'</div><div class="track-ch">'+esc(t.ch)+'</div></div>'
+      + '<div class="track-right"><div class="upnext-item-actions">'
+      + '<button class="btn-upnext-to-queue" onclick="event.stopPropagation();addUpNextToQueue('+i+')" title="Tambah ke antrean">'
+      + '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+      + '</button></div></div>'
+      + '</div>';
+  }).join('');
+  list.innerHTML = html;
+}
+
+/**
+ * Play a track from Up Next
+ * Injects the track into the playlist and plays it
+ */
+function playFromUpNext(i) {
+  var t = upNextTracks[i];
+  if (!t) return;
+  upNextCurrentlyPlayingId = t.id;
+  // Check if track already in playlist
+  var exists = tracks.findIndex(function(tr){ return tr.id === t.id; });
+  if (exists >= 0) {
+    playTrack(exists);
+  } else {
+    // Insert after current track
+    var insertAt = (curIdx >= 0 ? curIdx + 1 : tracks.length);
+    tracks.splice(insertAt, 0, t);
+    renderTracks();
+    playTrack(insertAt);
+  }
+  renderUpNextList(); // refresh playing indicator
+  if (window.innerWidth <= 640) setTimeout(closeMobilePlaylist, 200);
+}
+
+/**
+ * Add Up Next track to queue
+ */
+function addUpNextToQueue(i) {
+  var t = upNextTracks[i];
+  if (!t) return;
+  addToQueue(t, true);
+}
+
+/**
+ * Update badge
+ */
+function updateUpNextBadge() {
+  var el = document.getElementById('badge-upnext');
+  if (el) el.textContent = upNextTracks.length;
+}
+
+// ═══════════════════════════════════════════
 //  SHUFFLE
 // ═══════════════════════════════════════════
 function buildShuffleQueue(currentIdx) {
@@ -1527,10 +2044,9 @@ function fmt(s){s=Math.max(0,Math.floor(s));return Math.floor(s/60)+':'+(('0'+(s
 function seekTo(e){var rect=document.getElementById('prog-track').getBoundingClientRect();var clientX=e.touches?e.touches[0].clientX:e.clientX;var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));var seekSec=pct*(simDur||300);simCur=seekSec;ytCmd('seekTo',[seekSec,true]);updateProgressUI();}
 
 // ═══════════════════════════════════════════
-//  AD BLOCKER
+//  AD BLOCKER — TIDAK DISENTUH
 // ═══════════════════════════════════════════
 function triggerAdOverlay(){if(!adBlockEnabled) return;isAdShowing=true;document.getElementById('ad-overlay').classList.add('show');adCountVal=5;document.getElementById('ad-countdown').textContent=adCountVal;clearInterval(adCountdownTimer);adCountdownTimer=setInterval(function(){adCountVal--;document.getElementById('ad-countdown').textContent=adCountVal;if(adCountVal<=0){clearInterval(adCountdownTimer);hideAdOverlay();}},1000);}
-
 function hideAdOverlay(){isAdShowing=false;clearInterval(adCountdownTimer);document.getElementById('ad-overlay').classList.remove('show');}
 function toggleAdBlock(){
   adBlockEnabled=!adBlockEnabled;
@@ -1548,7 +2064,7 @@ function playTrack(idx){
   if(idx<0||idx>=tracks.length) return;
   curIdx=idx;
   var t=tracks[idx];
-  currentTrack=t; // Simpan track yang sedang diplay
+  currentTrack=t;
   simCur=0;simDur=0;ytAPIReady=false;isPlaying=false;
   stopProgTimer();hideAdOverlay();
   document.getElementById('idle-view').style.display='none';
@@ -1565,6 +2081,8 @@ function playTrack(idx){
   document.getElementById('t-dur').textContent='0:00';
   addPlayHistory(t);
   renderTracks();
+  // Re-render up next to update playing indicator
+  if(upNextTracks.length) renderUpNextList();
   scrollToTrack(idx);
   startInfoRequests();
   startAdWatch(t.id);
@@ -1634,6 +2152,7 @@ document.addEventListener('keydown',function(e){
     case 'q':case 'Q':switchTab('queue');break;
     case 'h':case 'H':switchTab('history');break;
     case 'p':case 'P':switchTab('playlist');break;
+    case 'u':case 'U':switchTab('upnext');break;
   }
 });
 
@@ -1663,6 +2182,11 @@ function trySearchWithProxy(q,btn){
     setModeText('Qoovy ('+(corsProxyIdx===0?'Aktif':'via proxy')+')');
     toast('Ditemukan '+tracks.length+' lagu');
     if(isShuffle) buildShuffleQueue(curIdx);
+    // Refresh up next when new search is done (context-aware)
+    if(upNextTracks.length > 0) {
+      upNextTracks = [];
+      loadUpNextTracks();
+    }
   }).catch(function(){corsProxyIdx++;trySearchWithProxy(q,btn);});
 }
 function setModeText(text){document.getElementById('mode-text').textContent=text;}
@@ -1715,7 +2239,18 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 var firstOpen=true;
 function openModal(first){firstOpen=!!first;document.getElementById('btn-modal-cancel').style.display=first?'none':'block';document.getElementById('api-key-input').value=API_KEY||'';document.getElementById('modal-backdrop').classList.add('show');setTimeout(function(){document.getElementById('api-key-input').focus();},200);}
 function closeModal(){document.getElementById('modal-backdrop').classList.remove('show');}
-function saveApiKey(){var val=document.getElementById('api-key-input').value.trim();API_KEY=val;updateApiStatus();closeModal();corsProxyIdx=0;if(val){toast('Code Key tersimpan!');setModeText('Qoovy Key aktif');}else{toast('Mode demo aktif.');setModeText('Mode demo — masukkan Code Key untuk pencarian nyata');}}
+function saveApiKey(){
+  var val=document.getElementById('api-key-input').value.trim();
+  API_KEY=val;updateApiStatus();closeModal();corsProxyIdx=0;
+  if(val){
+    toast('Code Key tersimpan!');setModeText('Qoovy Key aktif');
+    // Refresh up next with API
+    upNextTracks=[];
+    if(activeTab==='upnext') loadUpNextTracks();
+  }else{
+    toast('Mode demo aktif.');setModeText('Mode demo — masukkan Code Key untuk pencarian nyata');
+  }
+}
 function updateApiStatus(){var dot=document.getElementById('status-dot');var lbl=document.getElementById('api-btn-label');if(API_KEY){dot.classList.add('active');lbl.textContent='Key: ***'+API_KEY.slice(-4);}else{dot.classList.remove('active');lbl.textContent='SET API KEY';}}
 function toggleKeyVis(){var inp=document.getElementById('api-key-input');var isPass=inp.type==='password';inp.type=isPass?'text':'password';document.getElementById('eye-open').style.display=isPass?'none':'block';document.getElementById('eye-closed').style.display=isPass?'block':'none';}
 document.getElementById('modal-backdrop').addEventListener('click',function(e){if(e.target===this&&!firstOpen) closeModal();});
@@ -1732,6 +2267,8 @@ document.addEventListener('DOMContentLoaded',function(){
   }
   document.getElementById('track-list').addEventListener('click',function(){if(window.innerWidth<=640&&mobilePlaylistOpen) setTimeout(closeMobilePlaylist,200);});
   updateOnlineStatus();
+  // Build genre pills on init
+  buildGenrePills();
 });
 
 // ═══════════════════════════════════════════
@@ -1742,6 +2279,9 @@ window.addEventListener('load',function(){
   showDemoPlaylist('demo');
   renderHistoryList();
   renderQueueList();
+  buildGenrePills();
+  // Preload Up Next silently
+  loadUpNextTracks();
   setTimeout(function(){openModal(true);},500);
 });
 </script>
